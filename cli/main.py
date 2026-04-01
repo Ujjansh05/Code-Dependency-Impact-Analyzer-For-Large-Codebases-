@@ -1,0 +1,42 @@
+"""Click CLI entry point."""
+
+import click
+
+from cli import __version__
+
+
+@click.group(
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+@click.version_option(version=__version__, prog_name="code-impact")
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Enable verbose output.")
+@click.pass_context
+def cli(ctx: click.Context, verbose: bool):
+    """Code Dependency Impact Analyzer."""
+    ctx.ensure_object(dict)
+    ctx.obj["verbose"] = verbose
+
+    if verbose:
+        import logging
+        logging.basicConfig(level=logging.DEBUG, format="%(name)s │ %(message)s")
+
+
+from cli.commands.start import start
+from cli.commands.stop import stop
+from cli.commands.status import status
+from cli.commands.analyze import analyze
+from cli.commands.parse import parse
+from cli.commands.query import query
+from cli.commands.serve import serve
+
+cli.add_command(start)
+cli.add_command(stop)
+cli.add_command(status)
+cli.add_command(analyze)
+cli.add_command(parse)
+cli.add_command(query)
+cli.add_command(serve)
+
+
+if __name__ == "__main__":
+    cli()
