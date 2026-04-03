@@ -9,6 +9,11 @@ from cli.console import (
 )
 
 
+def _default_inference_mode() -> str:
+    mode = os.getenv("OLLAMA_INFERENCE_MODE", "fast").strip().lower()
+    return mode if mode in {"fast", "slow", "balanced"} else "fast"
+
+
 @click.command()
 @click.argument("path", type=click.Path(exists=True, file_okay=False, resolve_path=True))
 @click.option(
@@ -28,11 +33,18 @@ from cli.console import (
     help="Directory for intermediate CSV files.",
 )
 @click.option(
-    "--model", default="codellama:7b", show_default=True,
+    "--model", default="qwen2.5-coder:14b", show_default=True,
     help="Ollama model for AI explanations.",
 )
+@click.option(
+    "--mode",
+    type=click.Choice(["fast", "slow", "balanced"], case_sensitive=False),
+    default=_default_inference_mode,
+    show_default=True,
+    help="LLM inference profile for query explanation.",
+)
 def analyze(path: str, query: str | None, depth: int, no_docker: bool,
-            output_dir: str | None, model: str):
+            output_dir: str | None, model: str, mode: str):
     """⚡ Full analysis pipeline: parse → graph → load → query.
 
     PATH is the root directory of the Python project to analyze.
@@ -44,6 +56,7 @@ def analyze(path: str, query: str | None, depth: int, no_docker: bool,
       code-impact analyze ./myproject --no-docker
     """
     print_banner()
+    mode = mode.lower()
 
     total_steps = 5 if query else 4
     current = 0
@@ -116,7 +129,7 @@ def analyze(path: str, query: str | None, depth: int, no_docker: bool,
         current += 1
         print_step(current, total_steps, "Running impact analysis …")
         console.print()
-        _run_impact_query(query, depth)
+        _run_impact_query(query, depth, mode=mode)
 
     # Summary
     console.print()
@@ -146,7 +159,7 @@ def analyze(path: str, query: str | None, depth: int, no_docker: bool,
     console.print()
 
 
-def _run_impact_query(query: str, depth: int):
+def _run_impact_query(query: str, depth: int, mode: str):
     """Run an impact query and display results."""
     from rich.panel import Panel
 
@@ -191,7 +204,7 @@ def _run_impact_query(query: str, depth: int):
             for name in node_names:
                 console.print(f"    [warning]→[/warning]  {name}")
 
-            explanation = explain_impact(query, target, node_names)
+            explanation = explain_impact(query, target, node_names, mode=mode)
             console.print()
             console.print(Panel(explanation, title=" AI Explanation", border_style="blue"))
         else:

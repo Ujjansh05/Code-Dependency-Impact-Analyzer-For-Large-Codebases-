@@ -24,6 +24,7 @@ def explain_impact(
     question: str,
     target: str,
     affected_nodes: list[str],
+    mode: str | None = None,
 ) -> str:
     """Generate a human-readable explanation of the impact analysis results."""
     if not affected_nodes:
@@ -41,4 +42,5 @@ def explain_impact(
         affected_list=affected_list,
     )
 
-    return generate(prompt, temperature=0.4, max_tokens=512)
+    max_tokens = 256 if (mode or "").lower() == "fast" else 512
+    return generate(prompt, temperature=0.4, max_tokens=max_tokens, mode=mode)

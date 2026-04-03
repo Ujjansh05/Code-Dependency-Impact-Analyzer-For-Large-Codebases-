@@ -30,7 +30,7 @@ def status():
     console.print(table)
     console.print()
 
-    running = sum(1 for s in services if "" in s["status"])
+    running = sum(1 for s in services if "Running" in s["status"])
     total = len(services)
 
     if running == total:

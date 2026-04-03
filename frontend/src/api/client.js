@@ -23,10 +23,11 @@ export async function uploadCodebase(file) {
 }
 
 /** Run an impact analysis query. */
-export async function analyzeImpact(query, maxDepth = 5) {
+export async function analyzeImpact(query, maxDepth = 5, inferenceMode = 'fast') {
   const response = await api.post('/analyze', {
     query,
     max_depth: maxDepth,
+    inference_mode: inferenceMode,
   });
   return response.data;
 }

@@ -1,11 +1,18 @@
 """code-impact query command."""
 
+import os
+
 import click
 
 from cli.console import (
     print_banner, print_success, print_error, print_info,
     print_warning, console,
 )
+
+
+def _default_inference_mode() -> str:
+    mode = os.getenv("OLLAMA_INFERENCE_MODE", "fast").strip().lower()
+    return mode if mode in {"fast", "slow", "balanced"} else "fast"
 
 
 @click.command()
@@ -18,7 +25,14 @@ from cli.console import (
     "--no-ai", is_flag=True, default=False,
     help="Skip LLM explanation, show only graph results.",
 )
-def query(question: str, depth: int, no_ai: bool):
+@click.option(
+    "--mode",
+    type=click.Choice(["fast", "slow", "balanced"], case_sensitive=False),
+    default=_default_inference_mode,
+    show_default=True,
+    help="LLM inference profile for AI explanation.",
+)
+def query(question: str, depth: int, no_ai: bool, mode: str):
     """ Run a natural language impact query.
 
     QUESTION is your impact question in plain English.
@@ -30,6 +44,7 @@ def query(question: str, depth: int, no_ai: bool):
       code-impact query "What depends on calculate_total?" --no-ai
     """
     print_banner()
+    mode = mode.lower()
 
     print_info(f"Query: [accent]{question}[/accent]\n")
 
@@ -120,13 +135,13 @@ def query(question: str, depth: int, no_ai: bool):
 
     if not no_ai:
         console.print()
-        print_info("Generating AI explanation …")
+        print_info(f"Generating AI explanation … (mode: {mode})")
 
         try:
             from llm.explainer import explain_impact
             from rich.panel import Panel
 
-            explanation = explain_impact(question, target, node_names)
+            explanation = explain_impact(question, target, node_names, mode=mode)
             console.print()
             console.print(Panel(explanation, title=" AI Explanation", border_style="blue"))
         except Exception as e:

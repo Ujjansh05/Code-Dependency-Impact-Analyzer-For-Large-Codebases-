@@ -16,7 +16,7 @@ from cli.docker_manager import start_services, ensure_docker_installed
     help="Host port for Ollama API.",
 )
 @click.option(
-    "--model", default="codellama:7b", show_default=True,
+    "--model", default="qwen2.5-coder:14b", show_default=True,
     help="Ollama model to pull on startup.",
 )
 @click.option(

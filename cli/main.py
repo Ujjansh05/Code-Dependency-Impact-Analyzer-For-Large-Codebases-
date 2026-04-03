@@ -1,8 +1,26 @@
 """Click CLI entry point."""
 
+import sys
+
 import click
 
 from cli import __version__
+
+
+def _configure_stdio_for_unicode() -> None:
+    """Avoid Windows cp1252 crashes when rendering Unicode output."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if not callable(reconfigure):
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            # Best effort only: keep CLI usable even if stream is not reconfigurable.
+            pass
+
+
+_configure_stdio_for_unicode()
 
 
 @click.group(

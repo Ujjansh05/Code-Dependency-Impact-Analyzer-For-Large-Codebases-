@@ -24,14 +24,14 @@ export default function App() {
   }, []);
 
 
-  const handleAnalyze = useCallback(async (query) => {
+  const handleAnalyze = useCallback(async (query, mode = 'fast') => {
     setLoading(true);
     setError(null);
     setImpactResult(null);
     setHighlightedNodes([]);
 
     try {
-      const result = await analyzeImpact(query);
+      const result = await analyzeImpact(query, 5, mode);
       setImpactResult(result);
       setHighlightedNodes(result.affected_nodes.map((n) => n.id));
     } catch (err) {

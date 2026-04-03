@@ -6,14 +6,23 @@ from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
+from rich.theme import Theme
+
 THEME = Theme({
-    "info": "cyan",
-    "success": "bold green",
-    "warning": "bold yellow",
-    "error": "bold red",
-    "highlight": "bold magenta",
-    "muted": "dim white",
-    "accent": "bold blue",
+    "info": "bright_cyan",
+    "success": "bold bright_green",
+    "warning": "bold bright_yellow",
+    "error": "bold bright_red",
+    "user": "bold white",
+    "assistant": "bold bright_green",
+    "system": "dim bright_blue",
+    "highlight": "bold bright_magenta",
+    "accent": "bold bright_cyan",
+    "secondary": "bright_blue",
+    "muted": "dim #a0a0a0",
+    "border": "#3a3a3a",
+    "prompt": "bold bright_green",
+    "cursor": "blink bold white",
 })
 
 console = Console(theme=THEME)

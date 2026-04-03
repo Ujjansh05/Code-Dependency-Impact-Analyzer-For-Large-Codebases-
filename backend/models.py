@@ -1,5 +1,7 @@
 """Pydantic schemas for requests and responses."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -7,6 +9,10 @@ class AnalyzeRequest(BaseModel):
     """Request body for POST /api/analyze."""
     query: str = Field(..., description="Natural language impact query", example="What happens if I change the login function?")
     max_depth: int = Field(5, description="Maximum traversal depth", ge=1, le=20)
+    inference_mode: Literal["fast", "slow", "balanced"] = Field(
+        "fast",
+        description="LLM inference profile for explanation generation.",
+    )
 
 
 class AffectedNode(BaseModel):

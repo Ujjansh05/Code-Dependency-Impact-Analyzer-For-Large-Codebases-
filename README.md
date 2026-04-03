@@ -43,6 +43,32 @@ code-impact stop
 | `code-impact query "..."` | 🔍 NL impact query against loaded graph |
 | `code-impact serve` | 🌐 Start FastAPI backend on `:8000` |
 
+### Inference Modes (Fast / Slow)
+
+The analyzer now supports three LLM profiles:
+
+- `fast` → lower latency, shorter explanations
+- `balanced` → previous default-style behavior
+- `slow` → higher context and better quality, slower output
+
+CLI examples:
+
+```bash
+code-impact query "What breaks if I change login?" --mode fast
+code-impact query "What breaks if I change login?" --mode slow
+code-impact analyze ./myproject -q "Impact of auth.py" --mode balanced
+```
+
+API example:
+
+```json
+{
+  "query": "What breaks if I change login?",
+  "max_depth": 5,
+  "inference_mode": "fast"
+}
+```
+
 ### Lightweight Mode (No Docker)
 
 ```bash
@@ -185,7 +211,7 @@ This starts:
 ### 3. Pull the LLM Model
 
 ```bash
-docker exec -it ollama ollama pull codellama:7b
+docker exec -it ollama ollama pull qwen2.5-coder:14b
 ```
 
 ### 4. Start the Frontend (dev mode)

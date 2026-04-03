@@ -88,7 +88,7 @@ def generate_compose_file(
 def start_services(
     tg_port: int = 9000,
     ollama_port: int = 11434,
-    pull_model: str = "codellama:7b",
+    pull_model: str = "qwen2.5-coder:14b",
 ) -> bool:
     """Start TigerGraph and Ollama containers."""
     if not ensure_docker_installed():
@@ -203,7 +203,7 @@ def wait_for_service(url: str, name: str, timeout: int = 120) -> bool:
     return False
 
 
-def pull_ollama_model(model: str = "codellama:7b"):
+def pull_ollama_model(model: str = "qwen2.5-coder:14b"):
     """Pull an Ollama model inside the Ollama container."""
     print_info(f"Pulling model '{model}' (this may take a few minutes) …")
     try:

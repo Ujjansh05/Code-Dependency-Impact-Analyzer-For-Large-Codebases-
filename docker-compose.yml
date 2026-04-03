@@ -1,9 +1,7 @@
-version: "3.8"
-
 services:
   # ── TigerGraph ──────────────────────────────────────────────
   tigergraph:
-    image: docker.io/tigergraph/tigergraph:3.9.3
+    image: docker.io/tigergraph/community:4.2.2
     container_name: tigergraph
     ports:
       - "9000:9000"     # REST API
@@ -49,8 +47,15 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
+    gpus: all
     ports:
       - "11434:11434"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - OLLAMA_KEEP_ALIVE=30m
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
     volumes:
       - ollama_data:/root/.ollama
 

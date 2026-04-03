@@ -1,5 +1,7 @@
 """Natural language to target name extraction."""
 
+import os
+
 from llm.llama_client import generate
 
 
@@ -23,11 +25,13 @@ User question: {question}
 
 Extracted name:"""
 
+EXTRACTION_MODE = os.getenv("OLLAMA_EXTRACTION_MODE", "fast")
+
 
 def extract_target(question: str) -> dict[str, str]:
     """Parse a natural language query to extract the target function/file name."""
     prompt = EXTRACTION_PROMPT.format(question=question)
-    raw_response = generate(prompt, temperature=0.1, max_tokens=64)
+    raw_response = generate(prompt, temperature=0.1, max_tokens=64, mode=EXTRACTION_MODE)
     target = raw_response.strip().strip('"').strip("'")
 
     if target == "UNKNOWN" or not target:

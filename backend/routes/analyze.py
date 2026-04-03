@@ -64,6 +64,7 @@ async def analyze_impact(request: AnalyzeRequest):
         question=request.query,
         target=target,
         affected_nodes=[n.name for n in affected_nodes],
+        mode=request.inference_mode,
     )
 
     return AnalyzeResponse(
