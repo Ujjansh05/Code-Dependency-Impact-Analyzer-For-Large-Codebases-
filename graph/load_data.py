@@ -12,6 +12,17 @@ from graph.tigergraph_client import get_connection
 VERTICES_PATH = os.getenv("VERTICES_CSV", os.path.join("data", "vertices.csv"))
 EDGES_PATH = os.getenv("EDGES_CSV", os.path.join("data", "edges.csv"))
 
+VERTEX_TYPE_MAP = {
+    "File": "CodeFile",
+    "Function": "CodeFunction",
+}
+
+EDGE_SCHEMA = {
+    "CALLS": ("CodeFunction", "CodeFunction"),
+    "IMPORTS": ("CodeFile", "CodeFile"),
+    "CONTAINS": ("CodeFile", "CodeFunction"),
+}
+
 
 def load_vertices(conn, csv_path: str):
     """Upsert vertices from CSV into TigerGraph."""
@@ -23,7 +34,7 @@ def load_vertices(conn, csv_path: str):
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            vertex_type = row["type"]
+            vertex_type = VERTEX_TYPE_MAP.get(row["type"], row["type"])
             vertex_id = row["id"]
             attrs = {k: v for k, v in row.items() if k not in ("id", "type")}
             conn.upsertVertex(vertex_type, vertex_id, attrs)
@@ -39,22 +50,16 @@ def load_edges(conn, csv_path: str):
         print(f"Edges file not found: {csv_path}")
         return 0
 
-    edge_schema = {
-        "CALLS": ("Function", "Function"),
-        "IMPORTS": ("File", "File"),
-        "CONTAINS": ("File", "Function"),
-    }
-
     count = 0
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             edge_type = row["type"]
-            if edge_type not in edge_schema:
+            if edge_type not in EDGE_SCHEMA:
                 print(f"Unknown edge type: {edge_type}")
                 continue
 
-            src_type, tgt_type = edge_schema[edge_type]
+            src_type, tgt_type = EDGE_SCHEMA[edge_type]
             conn.upsertEdge(src_type, row["source"], edge_type, tgt_type, row["target"])
             count += 1
 

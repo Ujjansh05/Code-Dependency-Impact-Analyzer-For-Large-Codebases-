@@ -73,18 +73,20 @@ def query(question: str, depth: int, no_ai: bool, mode: str):
 
     try:
         from graph.tigergraph_client import get_connection
+        from graph.target_resolver import resolve_target_id
 
         conn = get_connection()
+        target_id = resolve_target_id(target=target, target_type=target_type)
 
         if target_type == "function":
             results = conn.runInstalledQuery(
                 "impact_analysis",
-                params={"start_func": target, "max_depth": depth},
+                params={"start_func": target_id or target, "max_depth": depth},
             )
         else:
             results = conn.runInstalledQuery(
                 "hop_detection",
-                params={"start_node": target, "num_hops": depth},
+                params={"start_node": target_id or target, "num_hops": depth},
             )
 
         affected = []

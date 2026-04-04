@@ -6,6 +6,7 @@ from backend.models import AnalyzeRequest, AnalyzeResponse, AffectedNode
 from llm.query_parser import extract_target
 from llm.explainer import explain_impact
 from graph.tigergraph_client import get_connection
+from graph.target_resolver import resolve_target_id
 
 router = APIRouter()
 
@@ -23,18 +24,20 @@ async def analyze_impact(request: AnalyzeRequest):
             detail="Could not identify a specific function or file from your query. Please be more specific.",
         )
 
+    target_id = resolve_target_id(target=target, target_type=target_type)
+
     try:
         conn = get_connection()
 
         if target_type == "function":
             results = conn.runInstalledQuery(
                 "impact_analysis",
-                params={"start_func": target, "max_depth": request.max_depth},
+                params={"start_func": target_id or target, "max_depth": request.max_depth},
             )
         else:
             results = conn.runInstalledQuery(
                 "hop_detection",
-                params={"start_node": target, "num_hops": request.max_depth},
+                params={"start_node": target_id or target, "num_hops": request.max_depth},
             )
 
         affected_ids = []

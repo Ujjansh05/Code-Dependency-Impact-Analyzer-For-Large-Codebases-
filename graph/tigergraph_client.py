@@ -30,8 +30,8 @@ def get_graph_stats(conn: tg.TigerGraphConnection | None = None) -> dict:
     conn = conn or get_connection()
     return {
         "vertices": {
-            "File": conn.getVertexCount("File"),
-            "Function": conn.getVertexCount("Function"),
+            "File": conn.getVertexCount("CodeFile"),
+            "Function": conn.getVertexCount("CodeFunction"),
         },
         "edges": {
             "CALLS": conn.getEdgeCount("CALLS"),

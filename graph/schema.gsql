@@ -1,45 +1,32 @@
-// ═══════════════════════════════════════════════════════════
-//  CodeGraph — TigerGraph Schema Definition
-//  Vertex types : File, Function
-//  Edge types   : CALLS, IMPORTS, CONTAINS
-// ═══════════════════════════════════════════════════════════
+// CodeGraph schema compatible with TigerGraph 4.2 syntax.
 
-// ── Create the graph ─────────────────────────────────────
-CREATE GRAPH CodeGraph()
+USE GLOBAL
 
-USE GRAPH CodeGraph
-
-// ── Vertex types ─────────────────────────────────────────
-
-CREATE VERTEX File (
+CREATE VERTEX CodeFile (
   PRIMARY_ID id STRING,
-  name       STRING,
-  filepath   STRING
-) WITH primary_id_as_attribute="true"
+  name STRING,
+  filepath STRING
+)
 
-CREATE VERTEX Function (
+CREATE VERTEX CodeFunction (
   PRIMARY_ID id STRING,
-  name       STRING,
-  filepath   STRING
-) WITH primary_id_as_attribute="true"
+  name STRING,
+  filepath STRING
+)
 
-// ── Edge types ───────────────────────────────────────────
-
-// Function → Function  (function A calls function B)
 CREATE DIRECTED EDGE CALLS (
-  FROM Function, TO Function
+  FROM CodeFunction,
+  TO CodeFunction
 )
 
-// File → File  (file A imports from file B)
 CREATE DIRECTED EDGE IMPORTS (
-  FROM File, TO File
+  FROM CodeFile,
+  TO CodeFile
 )
 
-// File → Function  (file A contains function B)
 CREATE DIRECTED EDGE CONTAINS (
-  FROM File, TO Function
+  FROM CodeFile,
+  TO CodeFunction
 )
 
-// ── Add to graph ─────────────────────────────────────────
-ALTER GRAPH CodeGraph ADD VERTEX File, Function
-ALTER GRAPH CodeGraph ADD EDGE CALLS, IMPORTS, CONTAINS
+CREATE GRAPH CodeGraph (CodeFile, CodeFunction, CALLS, IMPORTS, CONTAINS)
