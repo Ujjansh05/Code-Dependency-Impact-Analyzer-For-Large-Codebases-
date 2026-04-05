@@ -120,4 +120,42 @@ def test_query_runs_graph_query_without_ai(monkeypatch, runner):
     result = runner.invoke(query, ["Impact of changing login?", "--depth", "2", "--no-ai"])
 
     assert result.exit_code == 0
-    assert conn.calls == [("impact_analysis", {"start_func": "login", "max_depth": 2})]
+    assert conn.calls == [("impact_analysis", {"start_func": ("login",), "max_depth": 2})]
+
+
+def test_query_runs_file_hop_detection_with_typed_vertex(monkeypatch, runner):
+    class FakeConnection:
+        def __init__(self):
+            self.calls = []
+
+        def runInstalledQuery(self, name, params):
+            self.calls.append((name, params))
+            return [{"@@reachable": ["file::auth.py"]}]
+
+    conn = FakeConnection()
+
+    fake_query_parser = types.ModuleType("llm.query_parser")
+    fake_query_parser.extract_target = lambda question: {
+        "target": "auth.py",
+        "type": "file",
+        "raw": "auth.py",
+    }
+
+    fake_tg_module = types.ModuleType("graph.tigergraph_client")
+    fake_tg_module.get_connection = lambda: conn
+
+    fake_target_resolver = types.ModuleType("graph.target_resolver")
+    fake_target_resolver.resolve_target_id = (
+        lambda target, target_type: "file::auth.py"
+    )
+
+    monkeypatch.setitem(sys.modules, "llm.query_parser", fake_query_parser)
+    monkeypatch.setitem(sys.modules, "graph.tigergraph_client", fake_tg_module)
+    monkeypatch.setitem(sys.modules, "graph.target_resolver", fake_target_resolver)
+
+    result = runner.invoke(query, ["What breaks if I modify auth.py?", "--depth", "2", "--no-ai"])
+
+    assert result.exit_code == 0
+    assert conn.calls == [
+        ("hop_detection", {"start_node": ("file::auth.py", "CodeFile"), "num_hops": 2})
+    ]

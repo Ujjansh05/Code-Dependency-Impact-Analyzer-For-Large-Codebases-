@@ -3,8 +3,8 @@
 USE GRAPH CodeGraph
 
 CREATE QUERY impact_analysis(VERTEX<CodeFunction> start_func, INT max_depth = 5) FOR GRAPH CodeGraph
-  RETURNS (SetAccum<STRING>) {
-  SetAccum<STRING> @@affected;
+  RETURNS (SetAccum<VERTEX>) {
+  SetAccum<VERTEX> @@affected;
   OrAccum @seen;
 
   frontier = {start_func};
@@ -16,7 +16,7 @@ CREATE QUERY impact_analysis(VERTEX<CodeFunction> start_func, INT max_depth = 5)
       FROM frontier:s -(CALLS)- CodeFunction:t
       WHERE t.@seen == false
       ACCUM t.@seen = true,
-            @@affected += t.id;
+            @@affected += t;
   END;
 
   PRINT @@affected;
@@ -24,11 +24,11 @@ CREATE QUERY impact_analysis(VERTEX<CodeFunction> start_func, INT max_depth = 5)
 }
 
 CREATE QUERY hop_detection(VERTEX start_node, INT num_hops = 2) FOR GRAPH CodeGraph {
-  SetAccum<STRING> @@reachable;
+  SetAccum<VERTEX> @@reachable;
   OrAccum @seen;
 
-  frontier = {start_node};
-  frontier = SELECT s FROM frontier:s ACCUM s.@seen = true, @@reachable += s.id;
+  frontier = {start_node}; 
+  frontier = SELECT s FROM frontier:s ACCUM s.@seen = true, @@reachable += s;
 
   FOREACH i IN RANGE[1, num_hops] DO
     frontier =
@@ -36,7 +36,7 @@ CREATE QUERY hop_detection(VERTEX start_node, INT num_hops = 2) FOR GRAPH CodeGr
       FROM frontier:s -((CALLS | IMPORTS | CONTAINS):e)- :t
       WHERE t.@seen == false
       ACCUM t.@seen = true,
-            @@reachable += t.id;
+            @@reachable += t;
   END;
 
   PRINT @@reachable;

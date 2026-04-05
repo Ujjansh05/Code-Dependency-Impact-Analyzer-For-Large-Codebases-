@@ -16,14 +16,29 @@ from cli.docker_manager import start_services, ensure_docker_installed
     help="Host port for Ollama API.",
 )
 @click.option(
-    "--model", default="qwen2.5-coder:14b", show_default=True,
+    "--model", default="qwen2.5-coder:7b", show_default=True,
     help="Ollama model to pull on startup.",
+)
+@click.option(
+    "--tg-image", default=None,
+    help="TigerGraph Docker image tag (defaults to tigergraph/community:4.2.2).",
+)
+@click.option(
+    "--tg-archive", default=None, type=click.Path(exists=True, resolve_path=True),
+    help="Optional TigerGraph image archive file or directory to load before pull.",
 )
 @click.option(
     "--no-pull", is_flag=True, default=False,
     help="Skip pulling the Ollama model.",
 )
-def start(tg_port: int, ollama_port: int, model: str, no_pull: bool):
+def start(
+    tg_port: int,
+    ollama_port: int,
+    model: str,
+    tg_image: str | None,
+    tg_archive: str | None,
+    no_pull: bool,
+):
     """ Start TigerGraph and Ollama Docker services."""
     print_banner()
 
@@ -33,7 +48,17 @@ def start(tg_port: int, ollama_port: int, model: str, no_pull: bool):
     print_info("Starting code-impact infrastructure …\n")
 
     pull_model = None if no_pull else model
-    ok = start_services(tg_port=tg_port, ollama_port=ollama_port, pull_model=pull_model)
+    start_kwargs = {
+        "tg_port": tg_port,
+        "ollama_port": ollama_port,
+        "pull_model": pull_model,
+    }
+    if tg_image:
+        start_kwargs["tg_image"] = tg_image
+    if tg_archive:
+        start_kwargs["tg_archive"] = tg_archive
+
+    ok = start_services(**start_kwargs)
 
     if ok:
         console.print()

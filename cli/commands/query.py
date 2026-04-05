@@ -54,12 +54,20 @@ def query(question: str, depth: int, no_ai: bool, mode: str):
         parsed = extract_target(question)
         target = parsed["target"]
         target_type = parsed["type"]
+        raw = parsed.get("raw", "")
 
         if target_type == "unknown":
+            if isinstance(raw, str) and raw.startswith("[Error]"):
+                print_error(f"Target extraction failed: {raw}")
+                print_info("Check Ollama model availability with:  curl http://localhost:11434/api/tags")
+            else:
+                print_error(
+                    "Could not identify a function or file from your question.\n"
+                    "  Try being more specific, e.g.:\n"
+                    '  code-impact query "What breaks if I change the authenticate function?"'
+                )
             print_error(
-                "Could not identify a function or file from your question.\n"
-                "  Try being more specific, e.g.:\n"
-                '  code-impact query "What breaks if I change the authenticate function?"'
+                'Use a concrete target, e.g. "What breaks if I change authenticate?"'
             )
             raise SystemExit(1)
 
@@ -79,23 +87,20 @@ def query(question: str, depth: int, no_ai: bool, mode: str):
         target_id = resolve_target_id(target=target, target_type=target_type)
 
         if target_type == "function":
+            start_func = target_id or target
             results = conn.runInstalledQuery(
                 "impact_analysis",
-                params={"start_func": target_id or target, "max_depth": depth},
+                params={"start_func": (start_func,), "max_depth": depth},
             )
         else:
+            start_node = target_id or target
+            start_node_type = "CodeFile" if target_type == "file" else "CodeFunction"
             results = conn.runInstalledQuery(
                 "hop_detection",
-                params={"start_node": target_id or target, "num_hops": depth},
+                params={"start_node": (start_node, start_node_type), "num_hops": depth},
             )
 
-        affected = []
-        if results and isinstance(results, list):
-            for rs in results:
-                if "@@affected" in rs:
-                    affected = list(rs["@@affected"])
-                elif "@@reachable" in rs:
-                    affected = list(rs["@@reachable"])
+        affected = _extract_affected_nodes(results)
 
     except Exception as e:
         print_error(f"Graph query failed: {e}")
@@ -151,3 +156,30 @@ def query(question: str, depth: int, no_ai: bool, mode: str):
             print_info("Run with --no-ai to skip, or check Ollama: code-impact status")
 
     console.print()
+
+
+def _extract_affected_nodes(results: list[dict] | None) -> list[str]:
+    """Normalize installed-query outputs to a flat list of vertex IDs."""
+    affected: list[str] = []
+    if not results or not isinstance(results, list):
+        return affected
+
+    for rs in results:
+        if "@@affected" in rs:
+            raw_nodes = rs["@@affected"]
+        elif "@@reachable" in rs:
+            raw_nodes = rs["@@reachable"]
+        else:
+            continue
+
+        for node in list(raw_nodes):
+            if isinstance(node, str):
+                affected.append(node)
+            elif isinstance(node, dict):
+                node_id = node.get("v_id") or node.get("id") or node.get("name")
+                if node_id:
+                    affected.append(str(node_id))
+            else:
+                affected.append(str(node))
+
+    return affected

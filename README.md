@@ -211,7 +211,7 @@ This starts:
 ### 3. Pull the LLM Model
 
 ```bash
-docker exec -it ollama ollama pull qwen2.5-coder:14b
+docker exec -it ollama ollama pull qwen2.5-coder:7b
 ```
 
 ### 4. Start the Frontend (dev mode)

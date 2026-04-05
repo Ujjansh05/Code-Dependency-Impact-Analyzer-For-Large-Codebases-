@@ -10,7 +10,7 @@ import pyTigerGraph as tg
 def get_connection() -> tg.TigerGraphConnection:
     """Return a cached pyTigerGraph connection to the CodeGraph graph."""
     conn = tg.TigerGraphConnection(
-        host=f"http://{os.getenv('TG_HOST', 'tigergraph')}",
+        host=f"http://{os.getenv('TG_HOST', 'localhost')}",
         restppPort=os.getenv("TG_PORT", "9000"),
         username=os.getenv("TG_USERNAME", "tigergraph"),
         password=os.getenv("TG_PASSWORD", "tigergraph"),

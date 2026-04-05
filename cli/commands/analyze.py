@@ -33,7 +33,7 @@ def _default_inference_mode() -> str:
     help="Directory for intermediate CSV files.",
 )
 @click.option(
-    "--model", default="qwen2.5-coder:14b", show_default=True,
+    "--model", default="qwen2.5-coder:7b", show_default=True,
     help="Ollama model for AI explanations.",
 )
 @click.option(
@@ -182,23 +182,20 @@ def _run_impact_query(query: str, depth: int, mode: str):
 
         conn = get_connection()
         if target_type == "function":
+            start_func = target_id or target
             results = conn.runInstalledQuery(
                 "impact_analysis",
-                params={"start_func": target_id or target, "max_depth": depth},
+                params={"start_func": (start_func,), "max_depth": depth},
             )
         else:
+            start_node = target_id or target
+            start_node_type = "CodeFile" if target_type == "file" else "CodeFunction"
             results = conn.runInstalledQuery(
                 "hop_detection",
-                params={"start_node": target_id or target, "num_hops": depth},
+                params={"start_node": (start_node, start_node_type), "num_hops": depth},
             )
 
-        affected = []
-        if results and isinstance(results, list):
-            for rs in results:
-                if "@@affected" in rs:
-                    affected = list(rs["@@affected"])
-                elif "@@reachable" in rs:
-                    affected = list(rs["@@reachable"])
+        affected = _extract_affected_nodes(results)
 
         if affected:
             node_names = [n.split("::")[-1] if "::" in n else n for n in affected]
@@ -224,3 +221,30 @@ def _count_csv_rows(path: str) -> int:
             return max(0, sum(1 for _ in f) - 1)
     except Exception:
         return 0
+
+
+def _extract_affected_nodes(results: list[dict] | None) -> list[str]:
+    """Normalize installed-query outputs to a flat list of vertex IDs."""
+    affected: list[str] = []
+    if not results or not isinstance(results, list):
+        return affected
+
+    for rs in results:
+        if "@@affected" in rs:
+            raw_nodes = rs["@@affected"]
+        elif "@@reachable" in rs:
+            raw_nodes = rs["@@reachable"]
+        else:
+            continue
+
+        for node in list(raw_nodes):
+            if isinstance(node, str):
+                affected.append(node)
+            elif isinstance(node, dict):
+                node_id = node.get("v_id") or node.get("id") or node.get("name")
+                if node_id:
+                    affected.append(str(node_id))
+            else:
+                affected.append(str(node))
+
+    return affected

@@ -34,7 +34,10 @@ def extract_target(question: str) -> dict[str, str]:
     raw_response = generate(prompt, temperature=0.1, max_tokens=64, mode=EXTRACTION_MODE)
     target = raw_response.strip().strip('"').strip("'")
 
-    if target == "UNKNOWN" or not target:
+    if target.startswith("[Error]"):
+        target_type = "unknown"
+        target = "UNKNOWN"
+    elif target == "UNKNOWN" or not target:
         target_type = "unknown"
     elif target.endswith(".py"):
         target_type = "file"
