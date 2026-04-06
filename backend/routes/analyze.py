@@ -30,14 +30,20 @@ async def analyze_impact(request: AnalyzeRequest):
         conn = get_connection()
 
         if target_type == "function":
+            start_func = target_id or target
             results = conn.runInstalledQuery(
                 "impact_analysis",
-                params={"start_func": target_id or target, "max_depth": request.max_depth},
+                params={"start_func": (start_func,), "max_depth": request.max_depth},
             )
         else:
+            start_node = target_id or target
+            start_node_type = "CodeFile" if target_type == "file" else "CodeFunction"
             results = conn.runInstalledQuery(
                 "hop_detection",
-                params={"start_node": target_id or target, "num_hops": request.max_depth},
+                params={
+                    "start_node": (start_node, start_node_type),
+                    "num_hops": request.max_depth,
+                },
             )
 
         affected_ids = []
