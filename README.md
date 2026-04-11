@@ -87,8 +87,8 @@ graphxploit model switch <model_id>
 
 ```bash
 # Clone the repository
-git clone https://github.com/Ujjansh05/Code-Dependency-Impact-Analyzer-For-Large-Codebases-.git
-cd Code-Dependency-Impact-Analyzer-For-Large-Codebases-
+git clone https://github.com/Ujjansh05/GraphXpolit.git
+cd GraphXpolit
 
 # Install in editable mode
 pip install -e ".[dev]"
