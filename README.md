@@ -23,8 +23,17 @@ The system operates in three phases:
 
 ## Installation
 
-Install the package via pip:
+**Linux / macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Ujjansh05/GraphXpolit/main/install.sh | bash
+```
 
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/Ujjansh05/GraphXpolit/main/install.ps1 | iex
+```
+
+**Or install directly via pip:**
 ```bash
 pip install graphxploit-analyzer
 ```
