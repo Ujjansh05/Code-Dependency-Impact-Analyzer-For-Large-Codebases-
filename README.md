@@ -58,7 +58,7 @@ graphxploit visualize
 
 GraphXploit utilizes a "Bring Your Own Model" (BYOM) architecture. By default, it runs a local Ollama instance. You can mount external providers such as OpenAI or HuggingFace endpoints.
 
-All configurations are securely encrypted locally at `~/.code-impact/models.json`.
+All configurations are securely encrypted locally at `~/.graphxploit/models.json`.
 
 ```bash
 # Enter the interactive model setup
