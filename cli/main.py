@@ -46,6 +46,8 @@ from cli.commands.analyze import analyze
 from cli.commands.parse import parse
 from cli.commands.query import query
 from cli.commands.serve import serve
+from cli.commands.visualize import visualize
+from cli.commands.projects import projects
 
 cli.add_command(start)
 cli.add_command(stop)
@@ -54,7 +56,10 @@ cli.add_command(analyze)
 cli.add_command(parse)
 cli.add_command(query)
 cli.add_command(serve)
+cli.add_command(visualize)
+cli.add_command(projects)
 
 
 if __name__ == "__main__":
     cli()
+

@@ -1,8 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import GraphCanvas from './components/GraphCanvas';
 import QueryInput from './components/QueryInput';
 import ImpactPanel from './components/ImpactPanel';
 import FileUpload from './components/FileUpload';
+import CodeEditor from './components/CodeEditor';
+import ProjectSwitcher from './components/ProjectSwitcher';
 import { analyzeImpact, fetchGraphData } from './api/client';
 
 export default function App() {
@@ -11,7 +13,19 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [highlightedNodes, setHighlightedNodes] = useState([]);
+  const [selectedFileNode, setSelectedFileNode] = useState(null);
+  const [activeProject, setActiveProject] = useState(null);
 
+  // Auto-load graph data on mount (for visualize command scenario)
+  useEffect(() => {
+    fetchGraphData()
+      .then((data) => {
+        if (data && data.nodes && data.nodes.length > 0) {
+          setGraphData(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleUploadComplete = useCallback(async () => {
     try {
@@ -22,7 +36,6 @@ export default function App() {
       setError('Failed to load graph data.');
     }
   }, []);
-
 
   const handleAnalyze = useCallback(async (query, mode = 'fast') => {
     setLoading(true);
@@ -41,22 +54,49 @@ export default function App() {
     }
   }, []);
 
+  const handleNodeSelect = useCallback((node) => {
+    if (node.type === 'File') {
+      setSelectedFileNode(node);
+    }
+  }, []);
+
+  const handleProjectLoaded = useCallback(async (project) => {
+    setActiveProject(project);
+    setSelectedFileNode(null);
+    setImpactResult(null);
+    setHighlightedNodes([]);
+    setError(null);
+
+    try {
+      const data = await fetchGraphData();
+      setGraphData(data);
+    } catch (err) {
+      setError('Failed to load graph after switching project.');
+    }
+  }, []);
+
   return (
     <div className="app">
-
       <header className="app__header">
         <div className="app__logo">
           <span className="app__logo-icon" />
           Code Dependency Impact Analyzer
         </div>
-        <div className="app__status">
-          <span className="app__status-dot" />
-          System Online
+        <div className="app__header-right">
+          {activeProject && (
+            <span className="app__active-project">
+              {activeProject.name}
+            </span>
+          )}
+          <div className="app__status">
+            <span className="app__status-dot" />
+            System Online
+          </div>
         </div>
       </header>
 
-
       <aside className="app__sidebar">
+        <ProjectSwitcher onProjectLoaded={handleProjectLoaded} />
         <FileUpload onUploadComplete={handleUploadComplete} />
         <QueryInput onSubmit={handleAnalyze} loading={loading} />
 
@@ -71,9 +111,20 @@ export default function App() {
         {impactResult && <ImpactPanel result={impactResult} />}
       </aside>
 
-
       <main className="app__main">
-        <GraphCanvas data={graphData} highlightedNodes={highlightedNodes} />
+        <div className={`app__canvas-container ${selectedFileNode ? 'has-editor' : ''}`}>
+          <GraphCanvas
+            data={graphData}
+            highlightedNodes={highlightedNodes}
+            onNodeSelect={handleNodeSelect}
+          />
+        </div>
+        {selectedFileNode && (
+          <CodeEditor
+            fileNode={selectedFileNode}
+            onClose={() => setSelectedFileNode(null)}
+          />
+        )}
       </main>
     </div>
   );

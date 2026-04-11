@@ -38,4 +38,28 @@ export async function fetchGraphData() {
   return response.data;
 }
 
+/** Fetch the content of a source file. */
+export async function getFileContent(path) {
+  const response = await api.get('/file', { params: { path } });
+  return response.data;
+}
+
+/** Update the content of a source file. */
+export async function updateFileContent(path, content) {
+  const response = await api.put('/file', { content }, { params: { path } });
+  return response.data;
+}
+
+/** Fetch the list of registered projects. */
+export async function fetchProjects() {
+  const response = await api.get('/projects');
+  return response.data;
+}
+
+/** Load a registered project by ID (re-parses and updates graph CSVs). */
+export async function loadProject(projectId) {
+  const response = await api.post(`/projects/${projectId}/load`);
+  return response.data;
+}
+
 export default api;

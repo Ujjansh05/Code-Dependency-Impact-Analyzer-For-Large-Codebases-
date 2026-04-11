@@ -45,7 +45,7 @@ def _default_inference_mode() -> str:
 )
 def analyze(path: str, query: str | None, depth: int, no_docker: bool,
             output_dir: str | None, model: str, mode: str):
-    """⚡ Full analysis pipeline: parse → graph → load → query.
+    """Full analysis pipeline: parse, graph, load, query.
 
     PATH is the root directory of the Python project to analyze.
 
@@ -125,6 +125,16 @@ def analyze(path: str, query: str | None, depth: int, no_docker: bool,
         print_warning(f"Could not load into TigerGraph: {e}")
         print_info("CSVs are still available for manual loading.")
 
+    # Register the project so future commands remember it
+    from cli.project_registry import register_project
+    proj = register_project(
+        path=path,
+        vertices=v_count,
+        edges=e_count,
+        files=len(parsed),
+    )
+    print_info(f"Project registered as [accent]{proj['name']}[/accent] (id: {proj['id']})")
+
     if query:
         current += 1
         print_step(current, total_steps, "Running impact analysis …")
@@ -155,6 +165,7 @@ def analyze(path: str, query: str | None, depth: int, no_docker: bool,
     if not query:
         console.print()
         console.print('  [muted]Run a query:[/muted]  code-impact query "What breaks if I change X?"')
+        console.print('  [muted]Visualize:[/muted]    code-impact visualize')
 
     console.print()
 
