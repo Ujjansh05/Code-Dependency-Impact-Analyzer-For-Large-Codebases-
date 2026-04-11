@@ -1,4 +1,4 @@
-"""code-impact serve command."""
+"""graphxploit serve command."""
 
 import click
 
@@ -23,9 +23,9 @@ def serve(host: str, port: int, auto_reload: bool):
 
     \b
     Examples:
-      code-impact serve
-      code-impact serve --port 9090
-      code-impact serve --reload
+      graphxploit serve
+      graphxploit serve --port 9090
+      graphxploit serve --reload
     """
     print_banner()
 

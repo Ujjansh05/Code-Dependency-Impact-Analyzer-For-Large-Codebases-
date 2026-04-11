@@ -1,6 +1,7 @@
-"""Graph traversal results to human-readable explanation."""
+"""Graph traversal results to human-readable explanation.
 
-from llm.llama_client import generate
+Uses the active model from the model registry.
+"""
 
 
 EXPLANATION_PROMPT = """You are a code dependency impact analyst.
@@ -34,6 +35,10 @@ def explain_impact(
             f"functions or files in the analyzed codebase."
         )
 
+    from llm.model_registry import get_active_model
+
+    adapter = get_active_model()
+
     affected_list = "\n".join(f"  • {node}" for node in affected_nodes)
 
     prompt = EXPLANATION_PROMPT.format(
@@ -43,4 +48,4 @@ def explain_impact(
     )
 
     max_tokens = 256 if (mode or "").lower() == "fast" else 512
-    return generate(prompt, temperature=0.4, max_tokens=max_tokens, mode=mode)
+    return adapter.generate(prompt, temperature=0.4, max_tokens=max_tokens, mode=mode)

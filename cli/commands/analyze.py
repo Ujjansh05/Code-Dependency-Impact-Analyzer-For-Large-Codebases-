@@ -1,4 +1,4 @@
-"""code-impact analyze command."""
+"""graphxploit analyze command."""
 
 import os
 import click
@@ -33,8 +33,8 @@ def _default_inference_mode() -> str:
     help="Directory for intermediate CSV files.",
 )
 @click.option(
-    "--model", default="qwen2.5-coder:7b", show_default=True,
-    help="Ollama model for AI explanations.",
+    "--use-model", default=None,
+    help="Model ID from the registry to use (defaults to active model).",
 )
 @click.option(
     "--mode",
@@ -44,16 +44,16 @@ def _default_inference_mode() -> str:
     help="LLM inference profile for query explanation.",
 )
 def analyze(path: str, query: str | None, depth: int, no_docker: bool,
-            output_dir: str | None, model: str, mode: str):
+            output_dir: str | None, use_model: str | None, mode: str):
     """Full analysis pipeline: parse, graph, load, query.
 
     PATH is the root directory of the Python project to analyze.
 
     \b
     Examples:
-      code-impact analyze ./myproject
-      code-impact analyze ./myproject -q "What breaks if I change login?"
-      code-impact analyze ./myproject --no-docker
+      graphxploit analyze ./myproject
+      graphxploit analyze ./myproject -q "What breaks if I change login?"
+      graphxploit analyze ./myproject --no-docker
     """
     print_banner()
     mode = mode.lower()
@@ -74,11 +74,20 @@ def analyze(path: str, query: str | None, depth: int, no_docker: bool,
         else:
             print_info("Starting Docker services (TigerGraph + Ollama) …")
             console.print()
-            ok = start_services(pull_model=model)
+            ok = start_services()
             if not ok:
                 print_error("Failed to start services. Use --no-docker if they're running elsewhere.")
                 raise SystemExit(1)
             console.print()
+
+    # Activate specified model if given.
+    if use_model:
+        from llm.model_registry import set_active_model
+        switched = set_active_model(use_model)
+        if switched:
+            print_info(f"Using model: [accent]{switched.name}[/accent]")
+        else:
+            print_warning(f"Model '{use_model}' not found in registry. Using active model.")
 
     current += 1
     print_step(current, total_steps, f"Parsing [accent]{path}[/accent] …")
@@ -164,8 +173,8 @@ def analyze(path: str, query: str | None, depth: int, no_docker: bool,
 
     if not query:
         console.print()
-        console.print('  [muted]Run a query:[/muted]  code-impact query "What breaks if I change X?"')
-        console.print('  [muted]Visualize:[/muted]    code-impact visualize')
+        console.print('  [muted]Run a query:[/muted]  graphxploit query "What breaks if I change X?"')
+        console.print('  [muted]Visualize:[/muted]    graphxploit visualize')
 
     console.print()
 
@@ -222,7 +231,7 @@ def _run_impact_query(query: str, depth: int, mode: str):
 
     except Exception as e:
         print_warning(f"Impact query failed: {e}")
-        print_info("Make sure TigerGraph and Ollama are running (code-impact status).")
+        print_info("Make sure TigerGraph and Ollama are running (graphxploit status).")
 
 
 def _count_csv_rows(path: str) -> int:

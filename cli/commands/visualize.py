@@ -1,4 +1,4 @@
-"""code-impact visualize command."""
+"""graphxploit visualize command."""
 
 import os
 import sys
@@ -16,7 +16,7 @@ def _pick_project_interactive():
     projects = list_projects()
     if not projects:
         print_error("No projects registered yet.")
-        print_info('Run [accent]code-impact analyze ./your-project[/accent] first to register a project.')
+        print_info('Run [accent]graphxploit analyze ./your-project[/accent] first to register a project.')
         raise SystemExit(1)
 
     console.print()
@@ -62,9 +62,9 @@ def visualize(path: str | None, port: int, no_browser: bool):
 
     \b
     Examples:
-      code-impact visualize
-      code-impact visualize ./myproject
-      code-impact visualize --port 9090
+      graphxploit visualize
+      graphxploit visualize ./myproject
+      graphxploit visualize --port 9090
     """
     print_banner()
 

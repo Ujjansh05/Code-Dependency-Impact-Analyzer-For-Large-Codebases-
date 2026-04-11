@@ -54,7 +54,7 @@ volumes:
   code_impact_ollama_data:
 """
 
-DATA_DIR = Path.home() / ".code-impact"
+DATA_DIR = Path.home() / ".graphxploit"
 COMPOSE_PATH = DATA_DIR / "docker-compose.yml"
 
 
@@ -86,7 +86,7 @@ def _run_command(
 
 def _run_compose(args: list[str], capture: bool = False) -> subprocess.CompletedProcess:
     """Run a `docker compose` command against our compose file."""
-    cmd = ["docker", "compose", "-f", str(COMPOSE_PATH), "-p", "code-impact"] + args
+    cmd = ["docker", "compose", "-f", str(COMPOSE_PATH), "-p", "graphxploit"] + args
     return _run_command(cmd, capture=capture, cwd=DATA_DIR)
 
 
@@ -422,7 +422,7 @@ def start_services(
         if _tigergraph_stale_volume_hint():
             print_warning(
                 "TigerGraph detected stale data from an older image version. "
-                "Run `code-impact stop --volumes` once, then start again."
+                "Run `graphxploit stop --volumes` once, then start again."
             )
         return False
 

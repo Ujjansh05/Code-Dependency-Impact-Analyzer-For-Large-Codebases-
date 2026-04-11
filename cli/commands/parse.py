@@ -1,4 +1,4 @@
-"""code-impact parse command."""
+"""graphxploit parse command."""
 
 import os
 import click
@@ -27,9 +27,9 @@ def parse(path: str, output_dir: str | None, output_format: str):
 
     \b
     Examples:
-      code-impact parse ./myproject
-      code-impact parse ./myproject -o ./output
-      code-impact parse ./myproject --format json
+      graphxploit parse ./myproject
+      graphxploit parse ./myproject -o ./output
+      graphxploit parse ./myproject --format json
     """
     print_banner()
 
@@ -99,5 +99,5 @@ def parse(path: str, output_dir: str | None, output_format: str):
     )
     console.print(table)
     console.print()
-    console.print("  [muted]Next step:[/muted]  code-impact analyze " + path)
+    console.print("  [muted]Next step:[/muted]  graphxploit analyze " + path)
     console.print()

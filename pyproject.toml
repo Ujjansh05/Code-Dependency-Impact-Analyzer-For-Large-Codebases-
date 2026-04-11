@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "code-impact-analyzer"
+name = "graphxploit-analyzer"
 version = "1.0.0"
 description = "If I change this file/function → what will break? AST parsing + TigerGraph + LLaMA impact analysis."
 readme = "README.md"
@@ -46,6 +46,7 @@ dependencies = [
     # ── Utilities ────────────────────────────────
     "python-dotenv>=1.0.0",
     "aiofiles>=23.2.0",
+    "cryptography>=42.0.0",
 ]
 
 [project.optional-dependencies]
@@ -62,7 +63,7 @@ Issues = "https://github.com/Ujjansh05/Code-Dependency-Impact-Analyzer-For-Large
 
 # ── CLI Entry Point ──────────────────────────────────
 [project.scripts]
-code-impact = "cli.main:cli"
+graphxploit = "cli.main:cli"
 
 # ── Setuptools Config ────────────────────────────────
 [tool.setuptools.packages.find]

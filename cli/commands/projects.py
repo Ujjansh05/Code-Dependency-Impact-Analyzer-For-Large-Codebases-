@@ -1,4 +1,4 @@
-"""code-impact projects command — manage the project registry."""
+"""graphxploit projects command — manage the project registry."""
 
 import click
 
@@ -15,10 +15,10 @@ def projects(ctx):
 
     \b
     Examples:
-      code-impact projects              # list all projects
-      code-impact projects list
-      code-impact projects rename <id> "New Name"
-      code-impact projects delete <id>
+      graphxploit projects              # list all projects
+      graphxploit projects list
+      graphxploit projects rename <id> "New Name"
+      graphxploit projects delete <id>
     """
     if ctx.invoked_subcommand is None:
         _show_project_list()
@@ -32,7 +32,7 @@ def _show_project_list():
 
     if not all_projects:
         print_info("No projects registered yet.")
-        print_info('Run [accent]code-impact analyze ./your-project[/accent] to register one.')
+        print_info('Run [accent]graphxploit analyze ./your-project[/accent] to register one.')
         return
 
     table = make_table(
@@ -66,9 +66,9 @@ def _show_project_list():
     console.print()
     console.print(table)
     console.print()
-    console.print("  [muted]Manage:[/muted]  code-impact projects rename <id> \"New Name\"")
-    console.print("  [muted]        [/muted]  code-impact projects delete <id>")
-    console.print("  [muted]Visualize:[/muted] code-impact visualize")
+    console.print("  [muted]Manage:[/muted]  graphxploit projects rename <id> \"New Name\"")
+    console.print("  [muted]        [/muted]  graphxploit projects delete <id>")
+    console.print("  [muted]Visualize:[/muted] graphxploit visualize")
     console.print()
 
 
@@ -86,7 +86,7 @@ def rename(project_id: str, new_name: str):
 
     \b
     Example:
-      code-impact projects rename a1b2c3d4 "My Cool App"
+      graphxploit projects rename a1b2c3d4 "My Cool App"
     """
     from cli.project_registry import rename_project
 
@@ -95,7 +95,7 @@ def rename(project_id: str, new_name: str):
         print_success(f"Project renamed to [accent]{new_name}[/accent]")
     else:
         print_error(f"No project found with id '{project_id}'.")
-        print_info("Run [accent]code-impact projects[/accent] to see all IDs.")
+        print_info("Run [accent]graphxploit projects[/accent] to see all IDs.")
 
 
 @projects.command()
@@ -108,7 +108,7 @@ def delete(project_id: str):
 
     \b
     Example:
-      code-impact projects delete a1b2c3d4
+      graphxploit projects delete a1b2c3d4
     """
     from cli.project_registry import delete_project
 
@@ -116,4 +116,4 @@ def delete(project_id: str):
         print_success("Project removed from registry.")
     else:
         print_error(f"No project found with id '{project_id}'.")
-        print_info("Run [accent]code-impact projects[/accent] to see all IDs.")
+        print_info("Run [accent]graphxploit projects[/accent] to see all IDs.")

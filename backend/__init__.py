@@ -1,1 +1,1 @@
-"""backend — FastAPI backend for the Code Dependency Impact Analyzer."""
+"""backend — FastAPI backend for the GraphXploit."""

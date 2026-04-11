@@ -1,6 +1,6 @@
 """Persistent project registry for remembering analyzed codebases.
 
-Stores a JSON list of projects at ~/.code-impact/projects.json so that
+Stores a JSON list of projects at ~/.graphxploit/projects.json so that
 commands like `visualize` and `query` can re-use previously analyzed paths
 without the user needing to re-type them every time.
 """
@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-REGISTRY_DIR = os.path.join(Path.home(), ".code-impact")
+REGISTRY_DIR = os.path.join(Path.home(), ".graphxploit")
 REGISTRY_FILE = os.path.join(REGISTRY_DIR, "projects.json")
 
 

@@ -1,4 +1,4 @@
-"""code-impact start command."""
+"""graphxploit start command."""
 
 import click
 
@@ -39,13 +39,13 @@ def start(
     tg_archive: str | None,
     no_pull: bool,
 ):
-    """ Start TigerGraph and Ollama Docker services."""
+    """Start TigerGraph and Ollama Docker services."""
     print_banner()
 
     if not ensure_docker_installed():
         raise SystemExit(1)
 
-    print_info("Starting code-impact infrastructure …\n")
+    print_info("Starting graphxploit infrastructure ...\n")
 
     pull_model = None if no_pull else model
     start_kwargs = {
@@ -63,11 +63,39 @@ def start(
     if ok:
         console.print()
         print_success("All services are running!\n")
-        console.print(f"  │  TigerGraph REST   →  [link]http://localhost:{tg_port}[/link]")
-        console.print(f"  │  GraphStudio       →  [link]http://localhost:14240[/link]")
-        console.print(f"  │  Ollama            →  [link]http://localhost:{ollama_port}[/link]")
+        console.print(f"  |  TigerGraph REST   ->  [link]http://localhost:{tg_port}[/link]")
+        console.print(f"  |  GraphStudio       ->  [link]http://localhost:14240[/link]")
+        console.print(f"  |  Ollama            ->  [link]http://localhost:{ollama_port}[/link]")
+
+        # Auto-register Ollama model in the model registry.
+        try:
+            from llm.model_registry import (
+                find_by_provider_and_model, register_model,
+                ModelConfig, get_active_config,
+            )
+            existing = find_by_provider_and_model("ollama", model)
+            if not existing:
+                is_first = get_active_config() is None
+                register_model(ModelConfig(
+                    provider="ollama",
+                    model_name=model,
+                    name=f"Ollama ({model})",
+                    base_url=f"http://localhost:{ollama_port}",
+                    is_active=is_first,
+                ))
+                if is_first:
+                    print_info(f"Auto-registered [accent]{model}[/accent] as active model")
+                else:
+                    print_info(f"Auto-registered [accent]{model}[/accent] in model registry")
+
+            active = get_active_config()
+            if active:
+                console.print(f"  |  Active Model      ->  [accent]{active.name}[/accent]")
+        except Exception:
+            pass
+
         console.print()
-        console.print("  [muted]Next step:[/muted]  code-impact analyze ./your-project")
+        console.print("  [muted]Next step:[/muted]  graphxploit analyze ./your-project")
     else:
         print_error("Some services failed to start. Check Docker logs.")
         raise SystemExit(1)

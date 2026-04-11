@@ -1,14 +1,14 @@
-"""code-impact status command."""
+"""graphxploit status command."""
 
 import click
 
-from cli.console import print_banner, console, make_table
+from cli.console import print_banner, console, make_table, print_info
 from cli.docker_manager import get_service_status
 
 
 @click.command()
 def status():
-    """ Check the health of all code-impact services."""
+    """Check the health of all graphxploit services."""
     print_banner()
 
     services = get_service_status()
@@ -38,6 +38,17 @@ def status():
     elif running > 0:
         console.print(f"  [warning]{running}/{total} services running.[/warning]")
     else:
-        console.print("  [error]No services are running.[/error]  Run [accent]code-impact start[/accent] first.")
+        console.print("  [error]No services are running.[/error]  Run [accent]graphxploit start[/accent] first.")
+
+    # Show active model info.
+    try:
+        from llm.model_registry import get_active_config
+        active = get_active_config()
+        if active:
+            console.print(f"\n  [bold]Active Model:[/bold]  [accent]{active.name}[/accent]  ({active.provider} / {active.model_name})")
+        else:
+            console.print("\n  [muted]No active model. Run 'graphxploit model mount' to configure one.[/muted]")
+    except Exception:
+        pass
 
     console.print()

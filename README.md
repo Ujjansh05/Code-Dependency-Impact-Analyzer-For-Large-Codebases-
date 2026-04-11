@@ -1,4 +1,4 @@
-# ⚡ Code Dependency Impact Analyzer
+# ⚡ GraphXploit
 
 > **"If I change this file/function → what will break?"**
 
@@ -9,39 +9,39 @@ A full-stack tool that parses Python codebases, builds a dependency graph in Tig
 ## 📦 Install via pip (Recommended)
 
 ```bash
-pip install code-impact-analyzer
+pip install graphxploit-analyzer
 ```
 
 ### Quick Start
 
 ```bash
 # 1. Start TigerGraph + Ollama (requires Docker)
-code-impact start
+graphxploit start
 
 # 2. Analyze a Python project (full pipeline)
-code-impact analyze ./myproject
+graphxploit analyze ./myproject
 
 # 3. Ask impact questions in plain English
-code-impact query "What breaks if I change the login function?"
+graphxploit query "What breaks if I change the login function?"
 
 # 4. Check service health
-code-impact status
+graphxploit status
 
 # 5. Stop services when done
-code-impact stop
+graphxploit stop
 ```
 
 ### All CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `code-impact start` | 🚀 Start TigerGraph + Ollama Docker containers |
-| `code-impact stop` | 🛑 Stop containers (use `--volumes` to wipe data) |
-| `code-impact status` | 📊 Health-check all services |
-| `code-impact analyze ./path` | ⚡ Full pipeline: parse → graph → load → query |
-| `code-impact parse ./path` | 📝 Parse only — emit CSVs (no Docker needed) |
-| `code-impact query "..."` | 🔍 NL impact query against loaded graph |
-| `code-impact serve` | 🌐 Start FastAPI backend on `:8000` |
+| `graphxploit start` | 🚀 Start TigerGraph + Ollama Docker containers |
+| `graphxploit stop` | 🛑 Stop containers (use `--volumes` to wipe data) |
+| `graphxploit status` | 📊 Health-check all services |
+| `graphxploit analyze ./path` | ⚡ Full pipeline: parse → graph → load → query |
+| `graphxploit parse ./path` | 📝 Parse only — emit CSVs (no Docker needed) |
+| `graphxploit query "..."` | 🔍 NL impact query against loaded graph |
+| `graphxploit serve` | 🌐 Start FastAPI backend on `:8000` |
 
 ### Inference Modes (Fast / Slow)
 
@@ -54,9 +54,9 @@ The analyzer now supports three LLM profiles:
 CLI examples:
 
 ```bash
-code-impact query "What breaks if I change login?" --mode fast
-code-impact query "What breaks if I change login?" --mode slow
-code-impact analyze ./myproject -q "Impact of auth.py" --mode balanced
+graphxploit query "What breaks if I change login?" --mode fast
+graphxploit query "What breaks if I change login?" --mode slow
+graphxploit analyze ./myproject -q "Impact of auth.py" --mode balanced
 ```
 
 API example:
@@ -73,8 +73,8 @@ API example:
 
 ```bash
 # Just parse and emit dependency CSVs — no TigerGraph needed
-code-impact parse ./myproject
-code-impact parse ./myproject --format json -o ./output
+graphxploit parse ./myproject
+graphxploit parse ./myproject --format json -o ./output
 ```
 
 ### Development Install
@@ -83,7 +83,7 @@ code-impact parse ./myproject --format json -o ./output
 git clone https://github.com/Ujjansh05/Code-Dependency-Impact-Analyzer-For-Large-Codebases-.git
 cd Code-Dependency-Impact-Analyzer-For-Large-Codebases-
 pip install -e ".[dev]"
-code-impact --help
+graphxploit --help
 ```
 
 ---

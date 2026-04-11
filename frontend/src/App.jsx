@@ -5,7 +5,8 @@ import ImpactPanel from './components/ImpactPanel';
 import FileUpload from './components/FileUpload';
 import CodeEditor from './components/CodeEditor';
 import ProjectSwitcher from './components/ProjectSwitcher';
-import { analyzeImpact, fetchGraphData } from './api/client';
+import ModelManager from './components/ModelManager';
+import { analyzeImpact, fetchGraphData, getActiveModel } from './api/client';
 
 export default function App() {
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] });
@@ -15,8 +16,23 @@ export default function App() {
   const [highlightedNodes, setHighlightedNodes] = useState([]);
   const [selectedFileNode, setSelectedFileNode] = useState(null);
   const [activeProject, setActiveProject] = useState(null);
+  const [activeModelName, setActiveModelName] = useState(null);
 
-  // Auto-load graph data on mount (for visualize command scenario)
+  // Load active model name on mount
+  const refreshActiveModel = useCallback(async () => {
+    try {
+      const data = await getActiveModel();
+      if (data?.model) {
+        setActiveModelName(data.model.name);
+      } else {
+        setActiveModelName(null);
+      }
+    } catch {
+      setActiveModelName(null);
+    }
+  }, []);
+
+  // Auto-load graph data on mount
   useEffect(() => {
     fetchGraphData()
       .then((data) => {
@@ -25,7 +41,9 @@ export default function App() {
         }
       })
       .catch(() => {});
-  }, []);
+
+    refreshActiveModel();
+  }, [refreshActiveModel]);
 
   const handleUploadComplete = useCallback(async () => {
     try {
@@ -80,9 +98,15 @@ export default function App() {
       <header className="app__header">
         <div className="app__logo">
           <span className="app__logo-icon" />
-          Code Dependency Impact Analyzer
+          GraphXploit
         </div>
         <div className="app__header-right">
+          {activeModelName && (
+            <span className="app__active-model" title="Active LLM Model">
+              <span className="app__model-dot" />
+              {activeModelName}
+            </span>
+          )}
           {activeProject && (
             <span className="app__active-project">
               {activeProject.name}
@@ -96,6 +120,7 @@ export default function App() {
       </header>
 
       <aside className="app__sidebar">
+        <ModelManager onModelChange={refreshActiveModel} />
         <ProjectSwitcher onProjectLoaded={handleProjectLoaded} />
         <FileUpload onUploadComplete={handleUploadComplete} />
         <QueryInput onSubmit={handleAnalyze} loading={loading} />

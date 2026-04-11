@@ -1,4 +1,4 @@
-"""code-impact query command."""
+"""graphxploit query command."""
 
 import os
 
@@ -32,19 +32,33 @@ def _default_inference_mode() -> str:
     show_default=True,
     help="LLM inference profile for AI explanation.",
 )
-def query(question: str, depth: int, no_ai: bool, mode: str):
+@click.option(
+    "--use-model", default=None,
+    help="Model ID from the registry to use (defaults to active model).",
+)
+def query(question: str, depth: int, no_ai: bool, mode: str, use_model: str | None):
     """ Run a natural language impact query.
 
     QUESTION is your impact question in plain English.
 
     \b
     Examples:
-      code-impact query "What happens if I change the login function?"
-      code-impact query "Impact of modifying database.py?" --depth 3
-      code-impact query "What depends on calculate_total?" --no-ai
+      graphxploit query "What happens if I change the login function?"
+      graphxploit query "Impact of modifying database.py?" --depth 3
+      graphxploit query "What depends on calculate_total?" --no-ai
     """
     print_banner()
     mode = mode.lower()
+
+    # Activate specified model if given.
+    if use_model:
+        from llm.model_registry import set_active_model
+        switched = set_active_model(use_model)
+        if switched:
+            print_info(f"Using model: [accent]{switched.name}[/accent]")
+        else:
+            from cli.console import print_warning
+            print_warning(f"Model '{use_model}' not found. Using active model.")
 
     print_info(f"Query: [accent]{question}[/accent]\n")
 
@@ -64,7 +78,7 @@ def query(question: str, depth: int, no_ai: bool, mode: str):
                 print_error(
                     "Could not identify a function or file from your question.\n"
                     "  Try being more specific, e.g.:\n"
-                    '  code-impact query "What breaks if I change the authenticate function?"'
+                    '  graphxploit query "What breaks if I change the authenticate function?"'
                 )
             print_error(
                 'Use a concrete target, e.g. "What breaks if I change authenticate?"'
@@ -104,7 +118,7 @@ def query(question: str, depth: int, no_ai: bool, mode: str):
 
     except Exception as e:
         print_error(f"Graph query failed: {e}")
-        print_info("Make sure TigerGraph is running: code-impact status")
+        print_info("Make sure TigerGraph is running: graphxploit status")
         raise SystemExit(1)
 
     if not affected:
@@ -153,7 +167,7 @@ def query(question: str, depth: int, no_ai: bool, mode: str):
             console.print(Panel(explanation, title=" AI Explanation", border_style="blue"))
         except Exception as e:
             print_warning(f"AI explanation unavailable: {e}")
-            print_info("Run with --no-ai to skip, or check Ollama: code-impact status")
+            print_info("Run with --no-ai to skip, or check Ollama: graphxploit status")
 
     console.print()
 

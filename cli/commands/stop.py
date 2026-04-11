@@ -1,4 +1,4 @@
-"""code-impact stop command."""
+"""graphxploit stop command."""
 
 import click
 

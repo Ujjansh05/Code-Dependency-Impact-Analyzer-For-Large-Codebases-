@@ -1,3 +1,3 @@
-"""cli — Command-line interface for the Code Dependency Impact Analyzer."""
+"""cli — Command-line interface for the GraphXploit."""
 
 __version__ = "1.0.0"

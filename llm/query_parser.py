@@ -1,8 +1,9 @@
-"""Natural language to target name extraction."""
+"""Natural language to target name extraction.
+
+Uses the active model from the model registry instead of a hardcoded Ollama client.
+"""
 
 import os
-
-from llm.llama_client import generate
 
 
 EXTRACTION_PROMPT = """You are a code analysis assistant.
@@ -30,8 +31,11 @@ EXTRACTION_MODE = os.getenv("OLLAMA_EXTRACTION_MODE", "fast")
 
 def extract_target(question: str) -> dict[str, str]:
     """Parse a natural language query to extract the target function/file name."""
+    from llm.model_registry import get_active_model
+
+    adapter = get_active_model()
     prompt = EXTRACTION_PROMPT.format(question=question)
-    raw_response = generate(prompt, temperature=0.1, max_tokens=64, mode=EXTRACTION_MODE)
+    raw_response = adapter.generate(prompt, temperature=0.1, max_tokens=64, mode=EXTRACTION_MODE)
     target = raw_response.strip().strip('"').strip("'")
 
     if target.startswith("[Error]"):
