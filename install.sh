@@ -67,9 +67,11 @@ info "Installing GraphXploit..."
 if command -v pipx &>/dev/null; then
     pipx install graphxploit-analyzer 2>/dev/null || \
     pipx install git+https://github.com/Ujjansh05/GraphXpolit.git 2>/dev/null || \
+    $PYTHON -m pip install --user --break-system-packages git+https://github.com/Ujjansh05/GraphXpolit.git 2>/dev/null || \
     $PYTHON -m pip install --user git+https://github.com/Ujjansh05/GraphXpolit.git
     success "Installed via pipx (isolated environment)"
 else
+    $PYTHON -m pip install --user --break-system-packages git+https://github.com/Ujjansh05/GraphXpolit.git 2>/dev/null || \
     $PYTHON -m pip install --user git+https://github.com/Ujjansh05/GraphXpolit.git
     success "Installed via pip"
 fi

@@ -1,4 +1,5 @@
 """Ollama model adapter — migrated from the original llama_client.py."""
+# Provides model pull and availability checks via llm.ollama_setup.
 
 import os
 from typing import Any
@@ -126,3 +127,23 @@ class OllamaAdapter(ModelAdapter):
             return [m["name"] for m in models]
         except Exception:
             return []
+
+    def is_model_available(self, model_name: str | None = None) -> bool:
+        """Check if a model is already pulled locally."""
+        from llm.ollama_setup import is_model_available as _check
+        return _check(model_name or self.model_name, self.base_url)
+
+    def pull_model(
+        self,
+        model_name: str | None = None,
+        on_progress=None,
+        on_status=None,
+    ) -> bool:
+        """Pull a model from the Ollama registry."""
+        from llm.ollama_setup import pull_model as _pull
+        return _pull(
+            model_name=model_name or self.model_name,
+            base_url=self.base_url,
+            on_progress=on_progress,
+            on_status=on_status,
+        )

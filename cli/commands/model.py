@@ -415,22 +415,124 @@ def _interactive_provider_select() -> str | None:
 
 
 def _configure_ollama(base_url, model_name):
-    """Configure Ollama-specific settings."""
+    """Configure Ollama-specific settings with full bootstrap support.
+
+    Handles: install detection, auto-install, server startup,
+    model availability check, and streaming pull with progress bar.
+    """
+    from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, DownloadColumn, TransferSpeedColumn
+    from llm.ollama_setup import (
+        is_ollama_installed, install_ollama,
+        is_ollama_running, start_ollama_server,
+        is_model_available, pull_model, list_local_models,
+    )
+
     if not base_url:
         base_url = click.prompt("  Ollama URL", default="http://localhost:11434")
 
+    # ── Step 1: Check if Ollama is installed ─────────────────────
+    console.print()
+    if is_ollama_installed():
+        print_success("Ollama is installed")
+    else:
+        print_warning("Ollama is not installed.")
+        if click.confirm("  Install Ollama now?", default=True):
+            def _install_status(msg):
+                print_info(msg)
+            success = install_ollama(on_status=_install_status)
+            if not success:
+                print_error("Could not install Ollama automatically.")
+                console.print("  [muted]Install manually: curl -fsSL https://ollama.com/install.sh | sh[/muted]")
+                console.print("  [muted]Or visit: https://ollama.com[/muted]")
+                console.print()
+                return base_url, model_name
+            print_success("Ollama installed!")
+        else:
+            print_info("Skipping Ollama installation.")
+            console.print("  [muted]Install manually: curl -fsSL https://ollama.com/install.sh | sh[/muted]")
+            console.print()
+            return base_url, model_name
+
+    # ── Step 2: Check if Ollama server is running ────────────────
+    if is_ollama_running(base_url):
+        print_success("Ollama server is running")
+    else:
+        print_info("Ollama server is not running. Starting it ...")
+        def _start_status(msg):
+            print_info(msg)
+        success = start_ollama_server(
+            base_url=base_url, on_status=_start_status, timeout=30
+        )
+        if success:
+            print_success("Ollama server started!")
+        else:
+            print_error("Could not start Ollama server.")
+            console.print("  [muted]Start manually: ollama serve[/muted]")
+            console.print()
+            return base_url, model_name
+
+    # ── Step 3: List available models and prompt ─────────────────
+    available = list_local_models(base_url)
+    if available:
+        console.print()
+        console.print("  [bold cyan]Locally available models:[/bold cyan]")
+        for i, m in enumerate(available[:15], 1):
+            console.print(f"    [cyan]{i})[/cyan]  {m}")
+        console.print()
+
     if not model_name:
-        # Try to list available models.
-        try:
-            from llm.adapters.ollama_adapter import OllamaAdapter
-            adapter = OllamaAdapter(base_url=base_url)
-            available = adapter.list_available_models()
-            if available:
-                console.print(f"\n  [muted]Available models: {', '.join(available[:10])}[/muted]\n")
-        except Exception:
-            pass
         model_name = click.prompt("  Model name", default="qwen2.5-coder:7b")
 
+    # ── Step 4: Check if model needs to be pulled ────────────────
+    console.print()
+    if is_model_available(model_name, base_url):
+        print_success(f"Model '{model_name}' is already available locally")
+    else:
+        print_info(f"Model '{model_name}' is not available locally.")
+        if click.confirm(f"  Pull '{model_name}' now?", default=True):
+            console.print()
+
+            # Use Rich progress bar for the download.
+            with Progress(
+                SpinnerColumn(style="cyan"),
+                TextColumn("[bold cyan]{task.description}[/bold cyan]"),
+                BarColumn(bar_width=40, style="red", complete_style="bold red", finished_style="bold green"),
+                DownloadColumn(),
+                TransferSpeedColumn(),
+                console=console,
+                transient=False,
+            ) as progress:
+                task_id = progress.add_task(f"  Pulling {model_name}", total=None)
+                current_phase = {"text": ""}
+
+                def _on_progress(status_text, completed, total):
+                    if total > 0:
+                        progress.update(task_id, total=total, completed=completed,
+                                        description=f"  {status_text}")
+                    current_phase["text"] = status_text
+
+                def _on_status(msg):
+                    progress.update(task_id, description=f"  {msg}")
+                    current_phase["text"] = msg
+
+                success = pull_model(
+                    model_name=model_name,
+                    base_url=base_url,
+                    on_progress=_on_progress,
+                    on_status=_on_status,
+                )
+
+            console.print()
+            if success:
+                print_success(f"Model '{model_name}' pulled successfully!")
+            else:
+                print_error(f"Failed to pull '{model_name}'.")
+                console.print(f"  [muted]Try manually: ollama pull {model_name}[/muted]")
+        else:
+            print_info("Skipping model pull. You can pull it later:")
+            console.print(f"  [muted]ollama pull {model_name}[/muted]")
+
+    console.print()
     return base_url, model_name
 
 
