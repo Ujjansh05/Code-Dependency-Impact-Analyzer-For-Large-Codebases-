@@ -4,12 +4,15 @@ Works with OpenAI, Groq, Together AI, Fireworks, Azure OpenAI,
 vLLM, LM Studio, and any server exposing /v1/chat/completions.
 """
 
+import logging
 import os
 from typing import Any
 
 import requests
 
 from llm.adapters.base import ModelAdapter, ModelCapabilities
+
+logger = logging.getLogger("graphxploit.adapters.openai")
 
 # Known context windows for popular models (used for auto-config).
 _KNOWN_CONTEXT_WINDOWS: dict[str, int] = {
@@ -91,7 +94,7 @@ class OpenAIAdapter(ModelAdapter):
             body = ""
             try:
                 body = e.response.json().get("error", {}).get("message", "")
-            except Exception:
+            except (ValueError, KeyError):
                 pass
             return f"[Error] API error (HTTP {status}): {body or str(e)}"
         except Exception as e:
@@ -106,8 +109,8 @@ class OpenAIAdapter(ModelAdapter):
                 timeout=10,
             )
             return resp.status_code == 200
-        except Exception:
-            pass
+        except (requests.RequestException, OSError) as e:
+            logger.debug("OpenAI health check via /models failed: %s", e)
 
         # Fallback: try a minimal completion.
         try:
@@ -122,7 +125,8 @@ class OpenAIAdapter(ModelAdapter):
                 timeout=10,
             )
             return resp.status_code == 200
-        except Exception:
+        except (requests.RequestException, OSError) as e:
+            logger.debug("OpenAI health check via completion failed: %s", e)
             return False
 
     def get_capabilities(self) -> ModelCapabilities:
@@ -154,5 +158,6 @@ class OpenAIAdapter(ModelAdapter):
             resp.raise_for_status()
             data = resp.json().get("data", [])
             return [m["id"] for m in data if isinstance(m, dict) and "id" in m]
-        except Exception:
+        except (requests.RequestException, OSError) as e:
+            logger.debug("Failed to list OpenAI models: %s", e)
             return []

@@ -59,8 +59,9 @@ async def health():
                 api_key=config.api_key or None,
             )
             model_healthy = adapter.check_health()
-    except Exception:
-        pass
+    except (ImportError, ConnectionError, OSError) as exc:
+        import logging
+        logging.getLogger("graphxploit.backend").debug("Health check model probe failed: %s", exc)
 
     return {
         "api": "ok",

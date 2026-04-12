@@ -1,9 +1,12 @@
 """pyTigerGraph wrapper for CodeGraph."""
 
+import logging
 import os
 from functools import lru_cache
 
 import pyTigerGraph as tg
+
+logger = logging.getLogger("graphxploit.tigergraph")
 
 
 @lru_cache(maxsize=1)
@@ -19,8 +22,10 @@ def get_connection() -> tg.TigerGraphConnection:
 
     try:
         conn.getToken(conn.createSecret())
-    except Exception:
-        pass
+    except (ConnectionError, OSError, RuntimeError) as e:
+        logger.warning("TigerGraph token auth skipped: %s", e)
+    except Exception as e:
+        logger.debug("TigerGraph auth attempt failed (non-critical): %s", e)
 
     return conn
 

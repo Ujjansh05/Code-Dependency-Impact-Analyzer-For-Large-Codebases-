@@ -114,7 +114,7 @@ def check_health() -> bool:
     try:
         resp = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
         return resp.status_code == 200
-    except Exception:
+    except (requests.RequestException, OSError):
         return False
 
 
@@ -125,5 +125,5 @@ def list_models() -> list[str]:
         resp.raise_for_status()
         models = resp.json().get("models", [])
         return [m["name"] for m in models]
-    except Exception:
+    except (requests.RequestException, OSError):
         return []

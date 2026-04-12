@@ -91,7 +91,7 @@ def start(
             active = get_active_config()
             if active:
                 console.print(f"  |  Active Model      ->  [accent]{active.name}[/accent]")
-        except Exception:
+        except (ImportError, OSError, ValueError):
             pass
 
         console.print()

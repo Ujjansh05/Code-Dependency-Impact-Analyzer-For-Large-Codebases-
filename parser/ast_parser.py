@@ -117,11 +117,103 @@ def parse_file(filepath: str) -> dict[str, Any]:
     }
 
 
-def parse_directory(directory: str) -> list[dict[str, Any]]:
-    """Recursively parse every `.py` file under *directory*."""
+def parse_directory(
+    directory: str,
+    use_cache: bool = True,
+    show_progress: bool = True,
+) -> list[dict[str, Any]]:
+    """Recursively parse every `.py` file under *directory*.
+
+    Args:
+        directory: Root directory to scan.
+        use_cache: If True, skip files that haven't changed since last parse.
+        show_progress: If True, show a Rich progress bar in the terminal.
+    """
     from parser.utils import discover_python_files
 
-    results = []
-    for filepath in discover_python_files(directory):
-        results.append(parse_file(filepath))
+    py_files = discover_python_files(directory)
+    if not py_files:
+        return []
+
+    # Load incremental cache.
+    cache = {}
+    cache_hits = 0
+    if use_cache:
+        from parser.cache import load_cache, get_cached_result, update_cache, save_cache
+        cache = load_cache(directory)
+
+    results: list[dict[str, Any]] = []
+
+    if show_progress:
+        try:
+            from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, MofNCompleteColumn
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[bold cyan]Parsing"),
+                BarColumn(bar_width=30),
+                MofNCompleteColumn(),
+                TextColumn("[muted]{task.description}"),
+                transient=True,
+            ) as progress:
+                task = progress.add_task("", total=len(py_files))
+                for filepath in py_files:
+                    short_name = os.path.basename(filepath)
+                    progress.update(task, description=short_name)
+
+                    # Check cache first.
+                    if use_cache:
+                        cached = get_cached_result(cache, filepath)
+                        if cached is not None:
+                            results.append(cached)
+                            cache_hits += 1
+                            progress.advance(task)
+                            continue
+
+                    result = parse_file(filepath)
+                    results.append(result)
+
+                    if use_cache:
+                        update_cache(cache, filepath, result)
+
+                    progress.advance(task)
+        except ImportError:
+            # Rich not available, fall back to silent parsing.
+            for filepath in py_files:
+                if use_cache:
+                    cached = get_cached_result(cache, filepath)
+                    if cached is not None:
+                        results.append(cached)
+                        cache_hits += 1
+                        continue
+                result = parse_file(filepath)
+                results.append(result)
+                if use_cache:
+                    update_cache(cache, filepath, result)
+    else:
+        for filepath in py_files:
+            if use_cache:
+                from parser.cache import get_cached_result, update_cache
+                cached = get_cached_result(cache, filepath)
+                if cached is not None:
+                    results.append(cached)
+                    cache_hits += 1
+                    continue
+            result = parse_file(filepath)
+            results.append(result)
+            if use_cache:
+                from parser.cache import update_cache
+                update_cache(cache, filepath, result)
+
+    # Save updated cache.
+    if use_cache and cache:
+        from parser.cache import save_cache
+        save_cache(directory, cache)
+
+    if cache_hits > 0:
+        import logging
+        logging.getLogger("graphxploit.parser").info(
+            "Cache: %d/%d files unchanged (skipped), %d re-parsed",
+            cache_hits, len(py_files), len(py_files) - cache_hits,
+        )
+
     return results

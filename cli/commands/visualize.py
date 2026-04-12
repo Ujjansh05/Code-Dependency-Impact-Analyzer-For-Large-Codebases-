@@ -109,7 +109,7 @@ def visualize(path: str | None, port: int, no_browser: bool):
         try:
             with open(p, "r") as f:
                 return max(0, sum(1 for _ in f) - 1)
-        except Exception:
+        except OSError:
             return 0
     register_project(
         path=path,

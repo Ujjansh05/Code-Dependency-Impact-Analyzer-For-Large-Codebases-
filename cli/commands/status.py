@@ -48,7 +48,7 @@ def status():
             console.print(f"\n  [bold]Active Model:[/bold]  [accent]{active.name}[/accent]  ({active.provider} / {active.model_name})")
         else:
             console.print("\n  [muted]No active model. Run 'graphxploit model mount' to configure one.[/muted]")
-    except Exception:
+    except (ImportError, OSError, ValueError):
         pass
 
     console.print()

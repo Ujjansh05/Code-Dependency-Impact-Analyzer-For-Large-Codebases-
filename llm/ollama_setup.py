@@ -29,7 +29,7 @@ def is_ollama_running(base_url: str = "http://localhost:11434") -> bool:
     try:
         resp = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=5)
         return resp.status_code == 200
-    except Exception:
+    except (requests.RequestException, OSError):
         return False
 
 
@@ -40,7 +40,7 @@ def list_local_models(base_url: str = "http://localhost:11434") -> list[str]:
         resp.raise_for_status()
         models = resp.json().get("models", [])
         return [m["name"] for m in models]
-    except Exception:
+    except (requests.RequestException, OSError):
         return []
 
 

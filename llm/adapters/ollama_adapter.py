@@ -1,12 +1,15 @@
 """Ollama model adapter — migrated from the original llama_client.py."""
 # Provides model pull and availability checks via llm.ollama_setup.
 
+import logging
 import os
 from typing import Any
 
 import requests
 
 from llm.adapters.base import ModelAdapter, ModelCapabilities
+
+logger = logging.getLogger("graphxploit.adapters.ollama")
 
 
 # Preserve the existing inference-mode tuning logic.
@@ -99,7 +102,8 @@ class OllamaAdapter(ModelAdapter):
         try:
             resp = requests.get(f"{self.base_url}/api/tags", timeout=5)
             return resp.status_code == 200
-        except Exception:
+        except (requests.ConnectionError, requests.Timeout, OSError) as e:
+            logger.debug("Ollama health check failed: %s", e)
             return False
 
     def get_capabilities(self) -> ModelCapabilities:
@@ -125,7 +129,8 @@ class OllamaAdapter(ModelAdapter):
             resp.raise_for_status()
             models = resp.json().get("models", [])
             return [m["name"] for m in models]
-        except Exception:
+        except (requests.RequestException, OSError) as e:
+            logger.debug("Failed to list Ollama models: %s", e)
             return []
 
     def is_model_available(self, model_name: str | None = None) -> bool:

@@ -43,8 +43,12 @@ def _default_inference_mode() -> str:
     show_default=True,
     help="LLM inference profile for query explanation.",
 )
+@click.option(
+    "--force", is_flag=True, default=False,
+    help="Force full re-parse (ignore cache).",
+)
 def analyze(path: str, query: str | None, depth: int, no_docker: bool,
-            output_dir: str | None, use_model: str | None, mode: str):
+            output_dir: str | None, use_model: str | None, mode: str, force: bool):
     """Full analysis pipeline: parse, graph, load, query.
 
     PATH is the root directory of the Python project to analyze.
@@ -93,7 +97,7 @@ def analyze(path: str, query: str | None, depth: int, no_docker: bool,
     print_step(current, total_steps, f"Parsing [accent]{path}[/accent] …")
 
     from parser.ast_parser import parse_directory
-    parsed = parse_directory(path)
+    parsed = parse_directory(path, use_cache=not force)
 
     total_funcs = sum(len(f.get("functions", [])) for f in parsed)
     total_imports = sum(len(f.get("imports", [])) for f in parsed)
@@ -189,7 +193,8 @@ def _run_impact_query(query: str, depth: int, mode: str):
         from graph.tigergraph_client import get_connection
         from graph.target_resolver import resolve_target_id
 
-        parsed = extract_target(query)
+        with console.status("[bold cyan]Extracting target …[/bold cyan]", spinner="dots"):
+            parsed = extract_target(query)
         target = parsed["target"]
         target_type = parsed["type"]
 
@@ -198,22 +203,23 @@ def _run_impact_query(query: str, depth: int, mode: str):
             return
 
         print_info(f"Target: [accent]{target}[/accent] ({target_type})")
-        target_id = resolve_target_id(target=target, target_type=target_type)
 
-        conn = get_connection()
-        if target_type == "function":
-            start_func = target_id or target
-            results = conn.runInstalledQuery(
-                "impact_analysis",
-                params={"start_func": (start_func,), "max_depth": depth},
-            )
-        else:
-            start_node = target_id or target
-            start_node_type = "CodeFile" if target_type == "file" else "CodeFunction"
-            results = conn.runInstalledQuery(
-                "hop_detection",
-                params={"start_node": (start_node, start_node_type), "num_hops": depth},
-            )
+        with console.status("[bold cyan]Traversing dependency graph …[/bold cyan]", spinner="dots"):
+            target_id = resolve_target_id(target=target, target_type=target_type)
+            conn = get_connection()
+            if target_type == "function":
+                start_func = target_id or target
+                results = conn.runInstalledQuery(
+                    "impact_analysis",
+                    params={"start_func": (start_func,), "max_depth": depth},
+                )
+            else:
+                start_node = target_id or target
+                start_node_type = "CodeFile" if target_type == "file" else "CodeFunction"
+                results = conn.runInstalledQuery(
+                    "hop_detection",
+                    params={"start_node": (start_node, start_node_type), "num_hops": depth},
+                )
 
         affected = _extract_affected_nodes(results)
 
@@ -221,15 +227,16 @@ def _run_impact_query(query: str, depth: int, mode: str):
             node_names = [n.split("::")[-1] if "::" in n else n for n in affected]
             print_info(f"Found {len(affected)} affected components:")
             for name in node_names:
-                console.print(f"    [warning]→[/warning]  {name}")
+                console.print(f"    [warning]\u2192[/warning]  {name}")
 
-            explanation = explain_impact(query, target, node_names, mode=mode)
+            with console.status("[bold cyan]Generating AI explanation …[/bold cyan]", spinner="dots"):
+                explanation = explain_impact(query, target, node_names, mode=mode)
             console.print()
             console.print(Panel(explanation, title=" AI Explanation", border_style="blue"))
         else:
             print_success(f"No downstream impact detected for '{target}'.")
 
-    except Exception as e:
+    except (ConnectionError, OSError, RuntimeError) as e:
         print_warning(f"Impact query failed: {e}")
         print_info("Make sure TigerGraph and Ollama are running (graphxploit status).")
 
@@ -239,7 +246,7 @@ def _count_csv_rows(path: str) -> int:
     try:
         with open(path, "r") as f:
             return max(0, sum(1 for _ in f) - 1)
-    except Exception:
+    except OSError:
         return 0
 
 

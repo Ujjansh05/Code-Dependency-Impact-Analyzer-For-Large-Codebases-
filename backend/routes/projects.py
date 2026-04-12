@@ -53,7 +53,7 @@ async def load_project(project_id: str):
             try:
                 with open(p, "r") as f:
                     return max(0, sum(1 for _ in f) - 1)
-            except Exception:
+            except OSError:
                 return 0
 
         v_count = _count(vertices_path)

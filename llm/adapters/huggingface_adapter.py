@@ -1,11 +1,14 @@
 """HuggingFace Inference API adapter."""
 
+import logging
 import os
 from typing import Any
 
 import requests
 
 from llm.adapters.base import ModelAdapter, ModelCapabilities
+
+logger = logging.getLogger("graphxploit.adapters.huggingface")
 
 
 _DEFAULT_HF_URL = "https://api-inference.huggingface.co/models"
@@ -88,7 +91,7 @@ class HuggingFaceAdapter(ModelAdapter):
             body = ""
             try:
                 body = str(e.response.json())
-            except Exception:
+            except (ValueError, KeyError):
                 pass
             if status == 503:
                 return "[Error] Model is loading on HuggingFace. Please retry in 30-60 seconds."
@@ -106,7 +109,8 @@ class HuggingFaceAdapter(ModelAdapter):
             )
             # 503 = model loading (still healthy, just cold).
             return resp.status_code in (200, 503)
-        except Exception:
+        except (requests.RequestException, OSError) as e:
+            logger.debug("HuggingFace health check failed: %s", e)
             return False
 
     def get_capabilities(self) -> ModelCapabilities:

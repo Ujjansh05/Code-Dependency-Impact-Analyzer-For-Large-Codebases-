@@ -1,4 +1,4 @@
-﻿"""Manage Docker Compose lifecycle for TigerGraph + Ollama."""
+"""Manage Docker Compose lifecycle for TigerGraph + Ollama."""
 
 import os
 import shutil
@@ -282,7 +282,7 @@ def _queries_installed(graph_name: str) -> bool:
             timeout=5,
         )
         return impact_resp.status_code != 404 and hop_resp.status_code != 404
-    except Exception:
+    except (requests.RequestException, OSError):
         return False
 
 
@@ -470,7 +470,7 @@ def get_service_status() -> list[dict[str, str]]:
     try:
         resp = requests.get("http://localhost:9000/echo", timeout=3)
         tg_status = " Running" if resp.status_code == 200 else " Unhealthy"
-    except Exception:
+    except (requests.RequestException, OSError):
         tg_status = " Stopped"
 
     services.append({
@@ -490,7 +490,7 @@ def get_service_status() -> list[dict[str, str]]:
     try:
         resp = requests.get("http://localhost:11434/api/tags", timeout=3)
         ollama_status = " Running" if resp.status_code == 200 else " Unhealthy"
-    except Exception:
+    except (requests.RequestException, OSError):
         ollama_status = " Stopped"
 
     services.append({
@@ -518,7 +518,7 @@ def wait_for_service(url: str, name: str, timeout: int = 120) -> bool:
                     elapsed = round(time.time() - start, 1)
                     print_success(f"{name} is ready ({elapsed}s)")
                     return True
-            except Exception:
+            except (requests.RequestException, OSError):
                 pass
             time.sleep(delay)
             delay = min(delay * 1.5, 10)
@@ -537,7 +537,7 @@ def pull_ollama_model(model: str = "qwen2.5-coder:7b"):
         else:
             print_warning(f"Could not pull model '{model}'. Pull it manually with:")
             console.print(f"    docker exec -it code_impact_ollama ollama pull {model}")
-    except Exception:
+    except (subprocess.SubprocessError, OSError):
         print_warning("Could not pull model. Ollama container may not be running.")
 
 
@@ -548,5 +548,5 @@ def are_services_running() -> bool:
     try:
         resp = requests.get("http://localhost:9000/echo", timeout=3)
         return resp.status_code == 200
-    except Exception:
+    except (requests.RequestException, OSError):
         return False

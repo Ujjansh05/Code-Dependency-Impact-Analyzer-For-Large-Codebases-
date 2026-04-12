@@ -15,7 +15,7 @@ def _configure_stdio_for_unicode() -> None:
             continue
         try:
             reconfigure(encoding="utf-8", errors="replace")
-        except Exception:
+        except (TypeError, OSError):
             # Best effort only: keep CLI usable even if stream is not reconfigurable.
             pass
 

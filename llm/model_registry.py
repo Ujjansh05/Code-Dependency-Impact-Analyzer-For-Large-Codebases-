@@ -226,6 +226,9 @@ def _mark_used(model_id: str) -> None:
 
 def _try_auto_detect_ollama() -> ModelAdapter | None:
     """Try to connect to a local Ollama and use whatever is available."""
+    import logging
+    _logger = logging.getLogger("graphxploit.model_registry")
+
     try:
         from llm.adapters.ollama_adapter import OllamaAdapter
         adapter = OllamaAdapter()
@@ -248,6 +251,10 @@ def _try_auto_detect_ollama() -> ModelAdapter | None:
                         is_active=True,
                     ))
                 return adapter
-    except Exception:
-        pass
+    except (ConnectionError, OSError) as e:
+        _logger.debug("Ollama auto-detect failed (connection): %s", e)
+    except ImportError as e:
+        _logger.debug("Ollama adapter not available: %s", e)
+    except Exception as e:
+        _logger.debug("Ollama auto-detect failed: %s", e)
     return None

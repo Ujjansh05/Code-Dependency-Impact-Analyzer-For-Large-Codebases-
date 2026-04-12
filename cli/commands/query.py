@@ -259,7 +259,8 @@ def _execute_query(question, depth, no_ai, mode, session):
     try:
         from llm.query_parser import extract_target
 
-        parsed = extract_target(question)
+        with console.status("[bold cyan]Extracting target …[/bold cyan]", spinner="dots"):
+            parsed = extract_target(question)
         target = parsed["target"]
         target_type = parsed["type"]
         raw = parsed.get("raw", "")
@@ -283,33 +284,31 @@ def _execute_query(question, depth, no_ai, mode, session):
         print_error("LLM module not available. Is Ollama running?")
         return
 
-    print_info("Traversing dependency graph ...\n")
-
     # Run graph query.
     try:
         from graph.tigergraph_client import get_connection
         from graph.target_resolver import resolve_target_id
 
-        conn = get_connection()
-        target_id = resolve_target_id(target=target, target_type=target_type)
+        with console.status("[bold cyan]Traversing dependency graph …[/bold cyan]", spinner="dots"):
+            conn = get_connection()
+            target_id = resolve_target_id(target=target, target_type=target_type)
 
-        if target_type == "function":
-            start_func = target_id or target
-            results = conn.runInstalledQuery(
-                "impact_analysis",
-                params={"start_func": (start_func,), "max_depth": depth},
-            )
-        else:
-            start_node = target_id or target
-            start_node_type = "CodeFile" if target_type == "file" else "CodeFunction"
-            results = conn.runInstalledQuery(
-                "hop_detection",
-                params={"start_node": (start_node, start_node_type), "num_hops": depth},
-            )
+            if target_type == "function":
+                start_func = target_id or target
+                results = conn.runInstalledQuery(
+                    "impact_analysis",
+                    params={"start_func": (start_func,), "max_depth": depth},
+                )
+            else:
+                start_node = target_id or target
+                start_node_type = "CodeFile" if target_type == "file" else "CodeFunction"
+                results = conn.runInstalledQuery(
+                    "hop_detection",
+                    params={"start_node": (start_node, start_node_type), "num_hops": depth},
+                )
+            affected = _extract_affected_nodes(results)
 
-        affected = _extract_affected_nodes(results)
-
-    except Exception as e:
+    except (ConnectionError, OSError, RuntimeError) as e:
         print_error(f"Graph query failed: {e}")
         print_info("Make sure TigerGraph is running: graphxploit status")
         return
@@ -367,7 +366,8 @@ def _execute_query(question, depth, no_ai, mode, session):
             from llm.explainer import explain_impact
             from rich.panel import Panel
 
-            explanation = explain_impact(question, target, node_names, mode=mode)
+            with console.status("[bold cyan]Generating AI explanation …[/bold cyan]", spinner="dots"):
+                explanation = explain_impact(question, target, node_names, mode=mode)
             console.print()
             console.print(Panel(explanation, title=" AI Explanation", border_style="blue"))
         except Exception as e:
