@@ -1,14 +1,53 @@
 import axios from 'axios';
 
-/** API client for the GraphXploit backend. */
+/**
+ * GraphXploit API client.
+ *
+ * Authentication
+ * ──────────────
+ * Every request carries the X-API-Key header.  The key is read (in
+ * priority order) from:
+ *
+ *   1. window.__GX_API_KEY__  — injected by `graphxploit serve` into
+ *      the built index.html so the key is available instantly.
+ *   2. localStorage key "gx_api_key" — lets users paste the key once
+ *      in the browser when running the raw dev server (npm run dev).
+ *
+ * If neither source yields a key the header is omitted and the backend
+ * will return 401 for every protected endpoint.
+ */
+
+function _resolveApiKey() {
+  // Source 1: injected by the CLI at build time or via a <script> in index.html.
+  if (typeof window !== 'undefined' && window.__GX_API_KEY__) {
+    return window.__GX_API_KEY__;
+  }
+  // Source 2: user-managed local storage (dev-server fallback).
+  try {
+    return localStorage.getItem('gx_api_key') || '';
+  } catch {
+    return '';
+  }
+}
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 120000,
+  timeout: 120_000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Attach the API key before every request.
+api.interceptors.request.use((config) => {
+  const key = _resolveApiKey();
+  if (key) {
+    config.headers['X-API-Key'] = key;
+  }
+  return config;
+});
+
+// ── Codebase upload ──────────────────────────────────────────────────────────
 
 /** Upload a codebase zip file for parsing. */
 export async function uploadCodebase(file) {
@@ -17,10 +56,12 @@ export async function uploadCodebase(file) {
 
   const response = await api.post('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 300000,
+    timeout: 300_000,
   });
   return response.data;
 }
+
+// ── Analysis ─────────────────────────────────────────────────────────────────
 
 /** Run an impact analysis query. */
 export async function analyzeImpact(query, maxDepth = 5, inferenceMode = 'fast') {
@@ -32,23 +73,29 @@ export async function analyzeImpact(query, maxDepth = 5, inferenceMode = 'fast')
   return response.data;
 }
 
+// ── Graph visualization ───────────────────────────────────────────────────────
+
 /** Fetch the full graph data for visualization. */
 export async function fetchGraphData() {
   const response = await api.get('/graph-data');
   return response.data;
 }
 
-/** Fetch the content of a source file. */
+// ── Code editor ───────────────────────────────────────────────────────────────
+
+/** Fetch the content of a source file (relative to the upload directory). */
 export async function getFileContent(path) {
   const response = await api.get('/file', { params: { path } });
   return response.data;
 }
 
-/** Update the content of a source file. */
+/** Update the content of a source file (relative to the upload directory). */
 export async function updateFileContent(path, content) {
   const response = await api.put('/file', { content }, { params: { path } });
   return response.data;
 }
+
+// ── Projects ──────────────────────────────────────────────────────────────────
 
 /** Fetch the list of registered projects. */
 export async function fetchProjects() {
@@ -62,7 +109,7 @@ export async function loadProject(projectId) {
   return response.data;
 }
 
-// ── Model Management ──────────────────────────────────────────
+// ── Model management ──────────────────────────────────────────────────────────
 
 /** Fetch all mounted models. */
 export async function fetchModels() {
@@ -106,7 +153,7 @@ export async function probeModel(modelId) {
   return response.data;
 }
 
-/** Test a model configuration without saving. */
+/** Test a model configuration without saving it. */
 export async function testModelConfig(config) {
   const response = await api.post('/models/test', config);
   return response.data;

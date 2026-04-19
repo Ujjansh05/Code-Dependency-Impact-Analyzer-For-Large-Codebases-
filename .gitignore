@@ -14,6 +14,11 @@ env/
 *.env.*
 !.env.example
 !*.env.example
+# Real config env files (keep only *.example)
+config/*.env
+!config/*.env.example
+# Auto-generated API key
+~/.graphxploit/server.key
 
 # Node / Frontend
 node_modules/

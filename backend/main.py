@@ -2,9 +2,12 @@
 
 import os
 import sys
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 # Ensure project root is on the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -12,21 +15,65 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from backend.routes import analyze, upload, graph, code
 from backend.routes import projects as projects_route
 from backend.routes import models as models_route
+from backend.middleware.auth import APIKeyMiddleware
 
+log = logging.getLogger("graphxploit.backend")
+
+# ── Mode detection ────────────────────────────────────────────────────────────
+# Set GRAPHXPLOIT_DEV=true ONLY in local development.  The CLI sets this
+# automatically when --dev is passed to `graphxploit serve`.
+_is_dev = os.getenv("GRAPHXPLOIT_DEV", "false").strip().lower() == "true"
+
+# ── FastAPI instance ──────────────────────────────────────────────────────────
 app = FastAPI(
     title="GraphXploit",
-    description="Analyze code dependencies and predict the impact of changes using AST parsing, TigerGraph, and pluggable LLMs.",
+    description=(
+        "Analyze code dependencies and predict the impact of changes "
+        "using AST parsing, TigerGraph, and pluggable LLMs."
+    ),
     version="2.0.0",
+    # Disable interactive docs in production (VULN-008)
+    docs_url="/docs" if _is_dev else None,
+    redoc_url="/redoc" if _is_dev else None,
+    openapi_url="/openapi.json" if _is_dev else None,
 )
+
+
+# ── Security headers ──────────────────────────────────────────────────────────
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Attach basic security headers to every HTTP response."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# ── API-Key authentication (VULN-004) ─────────────────────────────────────────
+# Reads GRAPHXPLOIT_API_KEY from the environment.  The CLI injects this before
+# starting uvicorn so users never have to configure it manually.
+app.add_middleware(APIKeyMiddleware)
+
+# ── CORS (VULN-003) ───────────────────────────────────────────────────────────
+# Default: allow only the local Vite dev server.
+# Override with CORS_ORIGINS=https://myapp.example.com in production.
+_raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
+# ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(analyze.router, prefix="/api", tags=["Analysis"])
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
 app.include_router(graph.router, prefix="/api", tags=["Graph"])
@@ -35,6 +82,7 @@ app.include_router(projects_route.router, prefix="/api", tags=["Projects"])
 app.include_router(models_route.router, prefix="/api", tags=["Models"])
 
 
+# ── Health check (no auth required) ─────────────────────────────────────────
 @app.get("/health", tags=["Health"])
 async def health():
     """Detailed health check including active model status."""
@@ -60,8 +108,7 @@ async def health():
             )
             model_healthy = adapter.check_health()
     except (ImportError, ConnectionError, OSError) as exc:
-        import logging
-        logging.getLogger("graphxploit.backend").debug("Health check model probe failed: %s", exc)
+        log.debug("Health check model probe failed: %s", exc)
 
     return {
         "api": "ok",
@@ -72,7 +119,8 @@ async def health():
     }
 
 
-# Serve static files from frontend/dist if it exists
+# ── Static frontend ───────────────────────────────────────────────────────────
+# When the React app has been built (`npm run build`), serve it from /
 frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 if os.path.exists(frontend_dist):
     from fastapi.staticfiles import StaticFiles
@@ -80,10 +128,9 @@ if os.path.exists(frontend_dist):
 else:
     @app.get("/", tags=["Health"])
     async def root():
-        """Health check / welcome endpoint when frontend is not built."""
+        """Welcome endpoint when the frontend has not been built yet."""
         return {
             "status": "ok",
             "service": "GraphXploit",
-            "docs": "/docs",
-            "note": "Frontend is not built. Run 'npm run build' in the frontend directory."
+            "note": "Frontend is not built. Run 'npm run build' in the frontend directory.",
         }
